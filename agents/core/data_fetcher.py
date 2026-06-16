@@ -24,7 +24,50 @@ def _sleep():
 
 # ── Price & Fundamentals ──────────────────────────────────────────────────────
 
+def _price_from_stooq(symbol: str) -> float | None:
+    """Stooq CSV API — stable free alternative when yfinance has no data."""
+    try:
+        url = f"https://stooq.com/q/l/?s={symbol.lower()}.us&f=sd2t2ohlcv&h&e=csv"
+        resp = requests.get(url, headers=HEADERS, timeout=10)
+        lines = resp.text.strip().splitlines()
+        if len(lines) >= 2:
+            parts = lines[1].split(",")
+            # CSV columns: Symbol,Date,Time,Open,High,Low,Close,Volume
+            close = float(parts[6]) if len(parts) > 6 else 0
+            if close > 0:
+                return round(close, 4)
+    except Exception:
+        pass
+    return None
+
+
+def _price_from_google_finance(symbol: str) -> float | None:
+    """Scrape current price from Google Finance — last resort, may break if Google changes HTML."""
+    for exchange in ("NASDAQ", "NYSE", "NYSEARCA"):
+        try:
+            url = f"https://www.google.com/finance/quote/{symbol}:{exchange}"
+            resp = requests.get(url, headers=HEADERS, timeout=15)
+            # Price lives in JSON-LD or as text inside a data attribute; use regex on raw HTML
+            m = re.search(r'"price":\s*"?([\d,]+\.?\d*)"?', resp.text)
+            if not m:
+                # Fallback: look for the visible price block (class names change, use context)
+                soup = BeautifulSoup(resp.text, "lxml")
+                for tag in soup.find_all("div", {"data-last-price": True}):
+                    val = tag["data-last-price"]
+                    price = float(str(val).replace(",", ""))
+                    if price > 0:
+                        return round(price, 4)
+                continue
+            price = float(m.group(1).replace(",", ""))
+            if price > 0:
+                return round(price, 4)
+        except Exception:
+            continue
+    return None
+
+
 def get_current_price(symbol: str) -> float | None:
+    # 1. yfinance fast_info
     try:
         ticker = yf.Ticker(symbol)
         data = ticker.fast_info
@@ -36,7 +79,12 @@ def get_current_price(symbol: str) -> float | None:
             return round(float(hist["Close"].iloc[-1]), 4)
     except Exception:
         pass
-    return None
+    # 2. Stooq CSV (reliable free source)
+    price = _price_from_stooq(symbol)
+    if price:
+        return price
+    # 3. Google Finance (fragile but catches what Stooq misses)
+    return _price_from_google_finance(symbol)
 
 
 def get_price_history(symbol: str, period: str = "3mo") -> list[dict]:
