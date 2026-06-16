@@ -97,18 +97,18 @@ class BaseAgent:
 
         # Try providers in order: Anthropic → OpenAI → Gemini
         providers = [
-            ("Anthropic",  _get_anthropic_client,  self._run_anthropic),
-            ("OpenAI",     _get_openai_client,      lambda c, u, m: self._run_openai(c, OPENAI_MODEL, u, m)),
-            ("Gemini",     _get_gemini_client,      lambda c, u, m: self._run_openai(c, GEMINI_MODEL, u, m)),
+            ("Anthropic",  ANTHROPIC_MODEL, _get_anthropic_client,  self._run_anthropic),
+            ("OpenAI",     OPENAI_MODEL,    _get_openai_client,      lambda c, u, m: self._run_openai(c, OPENAI_MODEL, u, m)),
+            ("Gemini",     GEMINI_MODEL,    _get_gemini_client,      lambda c, u, m: self._run_openai(c, GEMINI_MODEL, u, m)),
         ]
 
         last_err: Exception | None = None
-        for name, get_client, runner in providers:
+        for name, model, get_client, runner in providers:
             client = get_client()
             if client is None:
                 print(f"[base_agent] {name} skipped (API key not set)")
                 continue
-            print(f"[base_agent] Using {name}")
+            print(f"[base_agent] [{self.role}] Using {name} ({model})")
             try:
                 return runner(client, user_content, tool_map)
             except Exception as exc:
