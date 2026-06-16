@@ -7,7 +7,7 @@ from agents.core.data_fetcher import (
 )
 from agents.core import day_cache
 
-MAX_CANDIDATES = 10
+MAX_CANDIDATES = 20
 MIN_CANDIDATES = 10
 
 CACHE_KEY = "trend_spotter_candidates"
