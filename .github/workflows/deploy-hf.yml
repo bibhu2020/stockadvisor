@@ -1,4 +1,4 @@
-name: Deploy to HuggingFace Spaces
+name: Deploy to HuggingFace Space
 
 on:
   push:
@@ -6,13 +6,15 @@ on:
 
 jobs:
   deploy:
+    name: Push to HuggingFace Space
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Push to HuggingFace Space
+      - name: Push code to HuggingFace Space (triggers Docker rebuild)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |

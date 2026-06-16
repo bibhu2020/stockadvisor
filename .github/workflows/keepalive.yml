@@ -1,0 +1,28 @@
+name: Keep HuggingFace Space Alive
+
+on:
+  schedule:
+    # Ping every 35 minutes around the clock
+    - cron: '0,35 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping AlphaForge Space
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping HuggingFace Space to prevent sleep
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            https://mishrabp-stockadvisor.hf.space/api/health 2>/dev/null \
+            || curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            https://mishrabp-stockadvisor.hf.space)
+          echo "Response status: $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 500 ]; then
+            echo "Space is alive."
+          else
+            echo "Warning: unexpected status $STATUS"
+          fi
