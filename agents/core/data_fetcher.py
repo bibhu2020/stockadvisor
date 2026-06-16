@@ -182,8 +182,13 @@ def get_fundamentals(symbol: str) -> dict:
         analyst_rating      = info.get("recommendationKey", "")   # 'buy', 'hold', 'strong_buy'
         analyst_count       = info.get("numberOfAnalystOpinions")
 
+        current_price = info.get("currentPrice") or info.get("regularMarketPrice")
+        if not current_price:
+            current_price = get_current_price(symbol)
+
         return {
             "symbol": symbol,
+            "current_price": round(float(current_price), 4) if current_price else None,
             "company": info.get("longName", symbol),
             "sector": info.get("sector", "Unknown"),
             "industry": info.get("industry", "Unknown"),

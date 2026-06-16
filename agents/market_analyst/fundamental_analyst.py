@@ -119,9 +119,11 @@ def run(candidates: list[str], log) -> list[dict]:
         else:
             info["web_snippets"] = []
 
-        # Skip tickers with no price — delisted, invalid, or data unavailable
+        # Skip tickers with no price — delisted, invalid, or yfinance outage
         if not info.get("current_price"):
-            log(f"FundamentalAnalyst: {sym} — no price data, skipping (likely delisted or invalid)")
+            has_error = "error" in info
+            reason = f"yfinance error: {info['error']}" if has_error else "no price returned by yfinance"
+            log(f"FundamentalAnalyst: {sym} — skipping ({reason})")
             time.sleep(0.5)
             continue
 
