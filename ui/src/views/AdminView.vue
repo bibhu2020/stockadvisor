@@ -11,6 +11,7 @@ const liveLog = ref<Record<number, string>>({})
 const triggering = ref<Record<string, boolean>>({})
 const killing = ref<Record<number, boolean>>({})
 const toast = ref<{ msg: string; type: 'success' | 'error' } | null>(null)
+const confirm = ref<{ agent: typeof AGENTS[number] } | null>(null)
 
 const AGENTS = [
   { type: 'market_analyst', label: 'Market Analyst', icon: '📋', marketGated: true,
@@ -74,25 +75,32 @@ async function selectTab(t: typeof tab.value) {
   if (t === 'runs') fetchRuns()
 }
 
-async function trigger(type: string) {
-  if (triggering.value[type]) return
-  triggering.value[type] = true
+function requestTrigger(agent: typeof AGENTS[number]) {
+  if (triggering.value[agent.type]) return
+  confirm.value = { agent }
+}
+
+async function confirmTrigger() {
+  const agent = confirm.value?.agent
+  confirm.value = null
+  if (!agent) return
+
+  triggering.value[agent.type] = true
   try {
-    await api.post(`/agent-runs/trigger/${type}`)
-    showToast(`${type.replace(/_/g, ' ')} started — watching for new run…`, 'success')
-    // Poll until the new run appears (up to 10s)
+    await api.post(`/agent-runs/trigger/${agent.type}`)
+    showToast(`${agent.label} dispatched (force run) — watching for new run…`, 'success')
     let attempts = 0
     const poll = setInterval(async () => {
       await fetchRuns()
       const hasNew = runs.value.some(
-        (r) => r.agent_type === type && ['running', 'pending'].includes(r.status),
+        (r) => r.agent_type === agent.type && ['running', 'pending'].includes(r.status),
       )
       if (hasNew || ++attempts >= 20) clearInterval(poll)
     }, 500)
   } catch {
-    showToast(`Failed to trigger ${type}`, 'error')
+    showToast(`Failed to trigger ${agent.label}`, 'error')
   } finally {
-    triggering.value[type] = false
+    triggering.value[agent.type] = false
   }
 }
 
@@ -160,6 +168,27 @@ function lastRunFor(type: string) {
       <div v-if="toast" :class="['toast', toast.type]">{{ toast.msg }}</div>
     </Transition>
 
+    <!-- Confirm Modal -->
+    <Transition name="modal">
+      <div v-if="confirm" class="modal-backdrop" @click.self="confirm = null">
+        <div class="modal">
+          <div class="modal-icon">{{ confirm.agent.icon }}</div>
+          <h3 class="modal-title">Force Run {{ confirm.agent.label }}?</h3>
+          <p class="modal-body">
+            This will dispatch the <strong>{{ confirm.agent.label }}</strong> agent on GitHub Actions immediately
+            <span v-if="confirm.agent.marketGated && !marketOpen"> even though the <strong>market is currently closed</strong></span>.
+            The run cannot be cancelled once dispatched.
+          </p>
+          <div class="modal-actions">
+            <button class="modal-cancel" @click="confirm = null">Cancel</button>
+            <button class="modal-confirm" @click="confirmTrigger">
+              ⚡ Yes, Force Run
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <h2 class="page-h">Admin Panel</h2>
 
     <!-- ── Market Status Banner ─────────────────────────────────── -->
@@ -200,7 +229,7 @@ function lastRunFor(type: string) {
           class="run-btn"
           :class="{ loading: triggering[agent.type], 'btn-force': agent.marketGated && !marketOpen }"
           :disabled="triggering[agent.type]"
-          @click="trigger(agent.type)"
+          @click="requestTrigger(agent)"
         >
           <span v-if="triggering[agent.type]" class="spinner"></span>
           <span v-else-if="agent.marketGated && !marketOpen">⚡ Force Run</span>
@@ -406,4 +435,32 @@ function lastRunFor(type: string) {
 .save-btn:hover { background: #2d4f7c; }
 
 .empty { color: #9ca3af; text-align: center; padding: 32px 0; font-size: 0.875rem; }
+
+/* ── Confirm Modal ────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.modal {
+  background: #fff; border-radius: 16px; padding: 32px 28px; max-width: 420px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2); text-align: center;
+}
+.modal-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.modal-title { font-size: 1.15rem; font-weight: 700; color: #1e3a5f; margin: 0 0 12px; }
+.modal-body { font-size: 0.875rem; color: #4b5563; line-height: 1.6; margin: 0 0 24px; }
+.modal-actions { display: flex; gap: 12px; justify-content: center; }
+.modal-cancel {
+  padding: 10px 24px; background: #f3f4f6; border: 1px solid #d1d5db;
+  border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; color: #374151;
+}
+.modal-cancel:hover { background: #e5e7eb; }
+.modal-confirm {
+  padding: 10px 24px; background: #1e3a5f; color: #fff;
+  border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+}
+.modal-confirm:hover { background: #2d4f7c; }
+.modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
+.modal-enter-active .modal, .modal-leave-active .modal { transition: transform 0.2s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
+.modal-enter-from .modal, .modal-leave-to .modal { transform: scale(0.95); }
 </style>
