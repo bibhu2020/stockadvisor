@@ -1,4 +1,4 @@
-"""StrategyTunerAgent — GPT-4o rewrites strategy when performance lags SPY."""
+"""StrategyTunerAgent — rewrites strategy when performance lags SPY via Claude → GPT-4o → Gemini fallback."""
 import json
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -53,7 +53,7 @@ def run(current_strategy: Strategy, performance: dict, patterns: dict,
     }
 
     agent = BaseAgent(role="StrategyTuner", system_prompt=SYSTEM_PROMPT)
-    log("StrategyTuner: calling GPT-4o to evolve strategy...")
+    log("StrategyTuner: evolving strategy...")
     result = agent.run(
         f"The current strategy underperformed SPY by "
         f"{performance.get('spy_equivalent_pnl', 0) - performance.get('total_pnl', 0):.2f}. "

@@ -77,7 +77,7 @@ def run(last_report, open_symbols: list[str], buying_power: float,
     }
 
     agent = BaseAgent(role="TradeDecision", system_prompt=SYSTEM_PROMPT)
-    log("TradeDecision: calling GPT-4o...")
+    log("TradeDecision: generating trade decisions...")
     result = agent.run("Decide which stocks to buy from the candidates.", context=context)
     buy_orders = result.get("buy_orders", [])
     log(f"TradeDecision: {len(buy_orders)} BUY orders: {[o.get('symbol') for o in buy_orders]}")

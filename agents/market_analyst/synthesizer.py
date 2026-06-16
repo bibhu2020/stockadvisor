@@ -222,7 +222,7 @@ def run(
     }
 
     agent = BaseAgent(role="Synthesizer", system_prompt=SYSTEM_PROMPT)
-    log("Synthesizer: calling GPT-4o for final picks (institutional-quality mode)...")
+    log("Synthesizer: generating final picks (institutional-quality mode)...")
     result = agent.run(
         "Based on the full research package, select the top 5 picks for the next 30 days. "
         "Write institutional-quality analysis citing specific data points from the research. "

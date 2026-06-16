@@ -1,4 +1,4 @@
-"""PatternAnalyzerAgent — GPT-4o finds win/lose patterns in past trades."""
+"""PatternAnalyzerAgent — finds win/lose patterns via Claude → GPT-4o → Gemini fallback."""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
@@ -36,7 +36,7 @@ def run(performance: dict, log) -> dict:
         }
 
     agent = BaseAgent(role="PatternAnalyzer", system_prompt=SYSTEM_PROMPT)
-    log("PatternAnalyzer: calling GPT-4o...")
+    log("PatternAnalyzer: analyzing trade patterns...")
     result = agent.run(
         "Analyze the monthly trading performance and find patterns.",
         context=performance,
