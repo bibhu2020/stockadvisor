@@ -205,7 +205,7 @@ function lastRunFor(type: string) {
     <!-- ── Trigger Bar ──────────────────────────────────────────── -->
     <div class="trigger-bar">
       <div v-for="agent in AGENTS" :key="agent.type" class="trigger-tile"
-        :class="{ 'market-gated': agent.marketGated && !marketOpen }">
+        :class="{ 'market-gated': !marketOpen }">
         <div class="tile-meta">
           <span class="tile-icon">{{ agent.icon }}</span>
           <div>
@@ -228,12 +228,12 @@ function lastRunFor(type: string) {
         </div>
         <button
           class="run-btn"
-          :class="{ loading: triggering[agent.type], 'btn-force': agent.marketGated && !marketOpen }"
+          :class="{ loading: triggering[agent.type], 'btn-force': !marketOpen }"
           :disabled="triggering[agent.type]"
           @click="requestTrigger(agent)"
         >
           <span v-if="triggering[agent.type]" class="spinner"></span>
-          <span v-else-if="agent.marketGated && !marketOpen">⚡ Force Run</span>
+          <span v-else-if="!marketOpen">⚡ Force Run</span>
           <span v-else>▶ Run Now</span>
         </button>
       </div>
