@@ -97,8 +97,9 @@ async function confirmTrigger() {
       )
       if (hasNew || ++attempts >= 20) clearInterval(poll)
     }, 500)
-  } catch {
-    showToast(`Failed to trigger ${agent.label}`, 'error')
+  } catch (err: unknown) {
+    const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+    showToast(msg ?? `Failed to trigger ${agent.label}`, 'error')
   } finally {
     triggering.value[agent.type] = false
   }

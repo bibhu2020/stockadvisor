@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AgentRun } from '../common/entities/agent-run.entity';
@@ -35,7 +35,7 @@ export class AgentRunsService {
 
     const token = process.env.GITHUB_TOKEN;
     const repo  = process.env.GITHUB_REPO ?? 'bibhu2020/stockadvisor';
-    if (!token) return { message: 'GITHUB_TOKEN not configured — cannot dispatch workflow' };
+    if (!token) throw new InternalServerErrorException('GITHUB_TOKEN not configured on the server — add it to HuggingFace Space secrets');
 
     const url = `https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`;
     const res = await fetch(url, {
@@ -50,7 +50,7 @@ export class AgentRunsService {
 
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`GitHub dispatch failed: ${res.status} — ${text}`);
+      throw new InternalServerErrorException(`GitHub dispatch failed (${res.status}): ${text}`);
     }
 
     return { message: `${agentType} workflow dispatched (force=true)` };
