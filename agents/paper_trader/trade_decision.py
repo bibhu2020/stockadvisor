@@ -1,4 +1,4 @@
-"""TradeDecisionAgent — GPT-4o decides which picks to buy."""
+"""TradeDecisionAgent — decides which picks to buy via Claude → GPT-4o → Gemini fallback."""
 import json
 from datetime import datetime, timedelta
 import sys, os

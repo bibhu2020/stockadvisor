@@ -106,7 +106,9 @@ class BaseAgent:
         for name, get_client, runner in providers:
             client = get_client()
             if client is None:
+                print(f"[base_agent] {name} skipped (API key not set)")
                 continue
+            print(f"[base_agent] Using {name}")
             try:
                 return runner(client, user_content, tool_map)
             except Exception as exc:

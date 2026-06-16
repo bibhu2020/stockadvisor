@@ -1,4 +1,4 @@
-"""SentimentAnalystAgent — scores news sentiment using GPT-4o."""
+"""SentimentAnalystAgent — scores news sentiment via Claude → GPT-4o → Gemini fallback."""
 import json
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))

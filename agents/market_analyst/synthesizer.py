@@ -1,4 +1,4 @@
-"""SynthesizerAgent — GPT-4o combines all analysis into top 5 picks."""
+"""SynthesizerAgent — combines all analysis into top 5 picks via Claude → GPT-4o → Gemini fallback."""
 import json
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
