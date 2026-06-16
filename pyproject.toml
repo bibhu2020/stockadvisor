@@ -1,0 +1,47 @@
+[project]
+name = "stockadvisor-agents"
+version = "1.0.0"
+description = "StockAdvisor AI agent system (Market Analyst, Paper Trader, Retrospective)"
+requires-python = ">=3.10"
+dependencies = [
+    "openai>=1.30.0",
+    "yfinance>=0.2.40",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "SQLAlchemy>=2.0.0",
+    "apscheduler>=3.10.0",
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=4.9.0",
+    "feedparser>=6.0.0",
+    "reportlab>=4.0.0",
+    "python-dotenv>=1.0.0",
+    "pytz>=2024.1",
+    "ta>=0.11.0",
+]
+
+[project.scripts]
+stockadvisor-init-db    = "agents.core.db:init_db"
+stockadvisor-analyst    = "agents.market_analyst.run_market_analyst:main"
+stockadvisor-trader     = "agents.paper_trader.run_paper_trader:main"
+stockadvisor-retro      = "agents.retrospective.run_retrospective:main"
+stockadvisor-scheduler  = "agents.scheduler:scheduler"
+
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agents*"]
+
+[tool.setuptools.package-data]
+"agents" = ["**/*.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]

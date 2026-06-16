@@ -1,0 +1,409 @@
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import api from '../api'
+
+const tab = ref<'runs' | 'users' | 'settings'>('runs')
+const runs = ref<any[]>([])
+const users = ref<any[]>([])
+const settingsForm = ref<Record<string, string>>({})
+const expandedRun = ref<number | null>(null)
+const liveLog = ref<Record<number, string>>({})
+const triggering = ref<Record<string, boolean>>({})
+const killing = ref<Record<number, boolean>>({})
+const toast = ref<{ msg: string; type: 'success' | 'error' } | null>(null)
+
+const AGENTS = [
+  { type: 'market_analyst', label: 'Market Analyst', icon: '📋', marketGated: true,
+    desc: 'Trend detection · Fundamentals · Technicals · Sentiment → Top 5 picks + PDF' },
+  { type: 'paper_trader',   label: 'Paper Trader',   icon: '💱', marketGated: true,
+    desc: 'Monitors open positions, books profit/loss, buys new picks from last report' },
+  { type: 'retrospective',  label: 'Retrospective',  icon: '🧠', marketGated: false,
+    desc: 'Reviews P&L vs SPY and evolves the trading strategy for next month' },
+]
+
+// Market hours detection (US Eastern, 9:30 AM–4:00 PM Mon–Fri)
+const now = ref(new Date())
+let clockInterval: ReturnType<typeof setInterval>
+
+const marketOpen = computed(() => {
+  const d = now.value
+  const dayOfWeek = d.getDay() // 0=Sun, 6=Sat
+  if (dayOfWeek === 0 || dayOfWeek === 6) return false
+  // Convert to ET: approximate offset (doesn't handle DST edge days)
+  const etOffset = isDST(d) ? -4 : -5
+  const etHour = (d.getUTCHours() + etOffset + 24) % 24
+  const etMin  = d.getUTCMinutes()
+  const etTime = etHour * 60 + etMin
+  return etTime >= 9 * 60 + 30 && etTime < 16 * 60
+})
+
+function isDST(d: Date): boolean {
+  // DST in US: second Sunday of March → first Sunday of November
+  const jan = new Date(d.getFullYear(), 0, 1).getTimezoneOffset()
+  const jul = new Date(d.getFullYear(), 6, 1).getTimezoneOffset()
+  return d.getTimezoneOffset() < Math.max(jan, jul)
+}
+
+onMounted(() => {
+  fetchRuns()
+  clockInterval = setInterval(() => { now.value = new Date() }, 30_000)
+})
+onUnmounted(() => clearInterval(clockInterval))
+
+async function fetchRuns() {
+  const res = await api.get('/agent-runs')
+  runs.value = res.data
+}
+
+async function fetchUsers() {
+  const res = await api.get('/users')
+  users.value = res.data
+}
+
+async function fetchSettings() {
+  const res = await api.get('/settings')
+  const map: Record<string, string> = {}
+  res.data.forEach((s: any) => { map[s.key] = s.value })
+  settingsForm.value = map
+}
+
+async function selectTab(t: typeof tab.value) {
+  tab.value = t
+  if (t === 'users') fetchUsers()
+  if (t === 'settings') fetchSettings()
+  if (t === 'runs') fetchRuns()
+}
+
+async function trigger(type: string) {
+  if (triggering.value[type]) return
+  triggering.value[type] = true
+  try {
+    await api.post(`/agent-runs/trigger/${type}`)
+    showToast(`${type.replace(/_/g, ' ')} started — watching for new run…`, 'success')
+    // Poll until the new run appears (up to 10s)
+    let attempts = 0
+    const poll = setInterval(async () => {
+      await fetchRuns()
+      const hasNew = runs.value.some(
+        (r) => r.agent_type === type && ['running', 'pending'].includes(r.status),
+      )
+      if (hasNew || ++attempts >= 20) clearInterval(poll)
+    }, 500)
+  } catch {
+    showToast(`Failed to trigger ${type}`, 'error')
+  } finally {
+    triggering.value[type] = false
+  }
+}
+
+function showToast(msg: string, type: 'success' | 'error') {
+  toast.value = { msg, type }
+  setTimeout(() => (toast.value = null), 4000)
+}
+
+async function expandRun(run: any) {
+  if (expandedRun.value === run.id) { expandedRun.value = null; return }
+  expandedRun.value = run.id
+  liveLog.value[run.id] = run.log || ''
+  if (run.status === 'running') streamLog(run.id)
+}
+
+function streamLog(id: number) {
+  const base = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'http://localhost:3000'
+  const src = new EventSource(`${base}/api/agent-runs/${id}/stream`)
+  src.onmessage = (e) => {
+    const data = JSON.parse(e.data)
+    if (data.log) liveLog.value[id] = (liveLog.value[id] ?? '') + data.log
+    if (data.done) { src.close(); fetchRuns() }
+  }
+  src.onerror = () => src.close()
+}
+
+async function killRun(run: any) {
+  if (killing.value[run.id]) return
+  killing.value[run.id] = true
+  try {
+    await api.patch(`/agent-runs/${run.id}/kill`)
+    showToast(`Run #${run.id} killed`, 'success')
+    await fetchRuns()
+  } catch {
+    showToast(`Failed to kill run #${run.id}`, 'error')
+  } finally {
+    killing.value[run.id] = false
+  }
+}
+
+async function approve(id: number) {
+  await api.patch(`/users/${id}/approve`)
+  showToast('User approved', 'success')
+  fetchUsers()
+}
+
+async function saveSettings() {
+  await api.patch('/settings', settingsForm.value)
+  showToast('Settings saved', 'success')
+}
+
+function statusColor(s: string) {
+  return { completed: '#27ae60', running: '#f39c12', failed: '#e74c3c', pending: '#95a5a6' }[s] ?? '#95a5a6'
+}
+
+function lastRunFor(type: string) {
+  return runs.value.find((r) => r.agent_type === type)
+}
+</script>
+
+<template>
+  <div class="admin-wrap">
+    <!-- Toast -->
+    <Transition name="toast">
+      <div v-if="toast" :class="['toast', toast.type]">{{ toast.msg }}</div>
+    </Transition>
+
+    <h2 class="page-h">Admin Panel</h2>
+
+    <!-- ── Market Status Banner ─────────────────────────────────── -->
+    <div :class="['market-banner', marketOpen ? 'open' : 'closed']">
+      <span class="market-dot">●</span>
+      <span>US Market: <strong>{{ marketOpen ? 'Open' : 'Closed' }}</strong></span>
+      <span class="market-note" v-if="!marketOpen">
+        — Market Analyst &amp; Paper Trader will run as Force on the next scheduled slot.
+        Admin triggers always force-run.
+      </span>
+    </div>
+
+    <!-- ── Trigger Bar ──────────────────────────────────────────── -->
+    <div class="trigger-bar">
+      <div v-for="agent in AGENTS" :key="agent.type" class="trigger-tile"
+        :class="{ 'market-gated': agent.marketGated && !marketOpen }">
+        <div class="tile-meta">
+          <span class="tile-icon">{{ agent.icon }}</span>
+          <div>
+            <div class="tile-label">
+              {{ agent.label }}
+              <span v-if="agent.marketGated" class="market-tag"
+                :class="marketOpen ? 'tag-open' : 'tag-closed'">
+                {{ marketOpen ? 'Market Open' : 'Market Closed' }}
+              </span>
+            </div>
+            <div class="tile-desc">{{ agent.desc }}</div>
+            <div v-if="lastRunFor(agent.type)" class="tile-last">
+              Last run:
+              <span :style="{ color: statusColor(lastRunFor(agent.type)!.status) }">
+                ● {{ lastRunFor(agent.type)!.status }}
+              </span>
+              &nbsp;{{ lastRunFor(agent.type)!.started_at?.slice(0, 16) }}
+            </div>
+          </div>
+        </div>
+        <button
+          class="run-btn"
+          :class="{ loading: triggering[agent.type], 'btn-force': agent.marketGated && !marketOpen }"
+          :disabled="triggering[agent.type]"
+          @click="trigger(agent.type)"
+        >
+          <span v-if="triggering[agent.type]" class="spinner"></span>
+          <span v-else-if="agent.marketGated && !marketOpen">⚡ Force Run</span>
+          <span v-else>▶ Run Now</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Tabs ───────────────────────────────────────────────────── -->
+    <div class="tabs">
+      <button v-for="t in ['runs', 'users', 'settings']" :key="t"
+        :class="{ active: tab === t }" @click="selectTab(t as any)">
+        {{ t === 'runs' ? 'Agent Run History' : t === 'users' ? 'Users' : 'Settings' }}
+      </button>
+    </div>
+
+    <!-- Agent Runs -->
+    <div v-if="tab === 'runs'" class="panel">
+      <div class="panel-toolbar">
+        <span class="panel-count">{{ runs.length }} runs</span>
+        <button class="refresh-btn" @click="fetchRuns">↻ Refresh</button>
+      </div>
+      <div v-for="run in runs" :key="run.id" class="run-card">
+        <div class="run-header" @click="expandRun(run)">
+          <span class="run-type">{{ run.agent_type.replace(/_/g, ' ').toUpperCase() }}</span>
+          <span class="run-id">#{{ run.id }}</span>
+          <span class="run-status" :style="{ color: statusColor(run.status) }">● {{ run.status }}</span>
+          <span class="run-date">{{ run.started_at?.slice(0, 16) }}</span>
+          <span class="run-by">{{ run.triggered_by }}</span>
+          <span class="duration" v-if="run.finished_at">
+            {{ Math.round((new Date(run.finished_at).getTime() - new Date(run.started_at).getTime()) / 1000) }}s
+          </span>
+          <button
+            v-if="['running','pending'].includes(run.status)"
+            class="kill-btn"
+            :disabled="killing[run.id]"
+            @click.stop="killRun(run)"
+          >{{ killing[run.id] ? '…' : '✕ Kill' }}</button>
+          <span class="chevron">{{ expandedRun === run.id ? '▲' : '▼' }}</span>
+        </div>
+        <div v-if="expandedRun === run.id" class="run-log">
+          <pre>{{ liveLog[run.id] ?? run.log }}</pre>
+          <p v-if="run.error" class="run-error">{{ run.error }}</p>
+        </div>
+      </div>
+      <p v-if="!runs.length" class="empty">No agent runs yet — trigger one above.</p>
+    </div>
+
+    <!-- Users -->
+    <div v-if="tab === 'users'" class="panel">
+      <table class="users-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Since</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr v-for="u in users" :key="u.id">
+            <td>{{ u.name }}</td>
+            <td>{{ u.email }}</td>
+            <td><span :class="['role-badge', u.role]">{{ u.role }}</span></td>
+            <td>{{ u.created_at?.slice(0, 10) }}</td>
+            <td>
+              <button v-if="u.role === 'pending'" @click="approve(u.id)" class="approve-btn">Approve</button>
+              <span v-else class="no-action">—</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Settings -->
+    <div v-if="tab === 'settings'" class="panel">
+      <div class="settings-form">
+        <div v-for="(val, key) in settingsForm" :key="key" class="setting-row">
+          <label>{{ String(key).replace(/_/g, ' ').toUpperCase() }}</label>
+          <input v-model="settingsForm[key as string]" type="text" />
+        </div>
+        <button class="save-btn" @click="saveSettings">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.admin-wrap { position: relative; }
+.page-h { font-size: 1.5rem; font-weight: 700; color: #1e3a5f; margin-bottom: 20px; }
+
+/* ── Toast ─────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; top: 20px; right: 24px; z-index: 999;
+  padding: 12px 20px; border-radius: 10px; font-size: 0.875rem; font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+.toast.success { background: #27ae60; color: #fff; }
+.toast.error   { background: #e74c3c; color: #fff; }
+.toast-enter-active, .toast-leave-active { transition: all 0.25s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(-10px); }
+
+/* ── Market Banner ─────────────────────────────────────────────── */
+.market-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; border-radius: 8px; font-size: 0.82rem;
+  margin-bottom: 16px; border: 1px solid;
+}
+.market-banner.open   { background: #f0fdf4; border-color: #86efac; color: #166534; }
+.market-banner.closed { background: #fff7ed; border-color: #fdba74; color: #9a3412; }
+.market-dot { font-size: 1rem; }
+.market-note { color: inherit; opacity: 0.75; }
+
+/* ── Trigger Bar ───────────────────────────────────────────────── */
+.trigger-bar {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  margin-bottom: 24px;
+}
+.trigger-tile {
+  background: #fff; border-radius: 12px; padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e5e7eb;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.tile-meta { display: flex; gap: 14px; align-items: flex-start; }
+.tile-icon { font-size: 1.6rem; flex-shrink: 0; margin-top: 2px; }
+.tile-label { font-weight: 700; color: #1e3a5f; margin-bottom: 2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.market-tag { font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+.tag-open   { background: #dcfce7; color: #15803d; }
+.tag-closed { background: #ffedd5; color: #9a3412; }
+.trigger-tile.market-gated { border-color: #fdba74; }
+.tile-desc { font-size: 0.78rem; color: #9ca3af; line-height: 1.4; margin-bottom: 4px; }
+.tile-last { font-size: 0.75rem; color: #6b7280; }
+.run-btn {
+  width: 100%; padding: 10px; background: #1e3a5f; color: #fff; border: none;
+  border-radius: 8px; font-weight: 600; font-size: 0.875rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background 0.15s;
+}
+.run-btn:hover:not(:disabled) { background: #2d4f7c; }
+.run-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.run-btn.loading { background: #2d4f7c; }
+.run-btn.btn-force { background: #92400e; }
+.run-btn.btn-force:hover:not(:disabled) { background: #b45309; }
+.spinner {
+  width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Tabs ─────────────────────────────────────────────────────── */
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid #e5e7eb; }
+.tabs button {
+  padding: 10px 20px; background: none; border: none; cursor: pointer;
+  font-size: 0.875rem; color: #6b7280; border-bottom: 2px solid transparent; margin-bottom: -2px;
+}
+.tabs button.active { color: #1e3a5f; font-weight: 700; border-bottom-color: #1e3a5f; }
+
+/* ── Panel ────────────────────────────────────────────────────── */
+.panel { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.panel-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.panel-count { font-size: 0.8rem; color: #9ca3af; }
+.refresh-btn { padding: 6px 14px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+.refresh-btn:hover { background: #e5e7eb; }
+
+/* ── Run Cards ────────────────────────────────────────────────── */
+.run-card { border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
+.run-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; font-size: 0.85rem; }
+.run-header:hover { background: #f9fafb; }
+.run-type { font-weight: 700; color: #1e3a5f; min-width: 160px; }
+.run-id { color: #d1d5db; font-size: 0.75rem; }
+.run-status { font-weight: 600; min-width: 100px; }
+.run-date { color: #6b7280; flex: 1; }
+.run-by { font-size: 0.72rem; background: #f3f4f6; padding: 2px 8px; border-radius: 4px; color: #6b7280; }
+.duration { font-size: 0.72rem; color: #9ca3af; }
+.chevron { color: #9ca3af; font-size: 0.75rem; }
+.kill-btn {
+  padding: 3px 10px; background: #fef2f2; color: #e74c3c;
+  border: 1px solid #fecaca; border-radius: 5px; cursor: pointer;
+  font-size: 0.75rem; font-weight: 700; white-space: nowrap;
+  transition: background 0.15s;
+}
+.kill-btn:hover:not(:disabled) { background: #e74c3c; color: #fff; border-color: #e74c3c; }
+.kill-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.run-log { padding: 0 16px 16px; }
+.run-log pre {
+  background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 14px;
+  font-size: 0.75rem; max-height: 320px; overflow-y: auto;
+  white-space: pre-wrap; word-break: break-all;
+}
+.run-error { color: #e74c3c; font-size: 0.8rem; margin-top: 8px; padding: 8px 12px; background: #fef2f2; border-radius: 6px; }
+
+/* ── Users ────────────────────────────────────────────────────── */
+.users-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.users-table th { background: #f3f4f6; padding: 10px 12px; text-align: left; font-weight: 600; color: #6b7280; }
+.users-table td { padding: 10px 12px; border-bottom: 1px solid #f9fafb; }
+.role-badge { padding: 2px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+.role-badge.admin   { background: #1e3a5f; color: #fff; }
+.role-badge.guest   { background: #dcfce7; color: #15803d; }
+.role-badge.pending { background: #fef3c7; color: #92400e; }
+.approve-btn { padding: 4px 12px; background: #27ae60; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+.no-action { color: #d1d5db; }
+
+/* ── Settings ─────────────────────────────────────────────────── */
+.settings-form { max-width: 500px; }
+.setting-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+.setting-row label { width: 220px; font-size: 0.8rem; font-weight: 700; color: #374151; flex-shrink: 0; }
+.setting-row input { flex: 1; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; }
+.save-btn { padding: 10px 24px; background: #1e3a5f; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-top: 8px; font-weight: 600; }
+.save-btn:hover { background: #2d4f7c; }
+
+.empty { color: #9ca3af; text-align: center; padding: 32px 0; font-size: 0.875rem; }
+</style>

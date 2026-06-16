@@ -1,0 +1,27 @@
+{
+  "name": "stockadvisor",
+  "version": "1.0.0",
+  "description": "AI-powered autonomous paper trading system",
+  "private": true,
+  "workspaces": [
+    "api",
+    "ui"
+  ],
+  "scripts": {
+    "dev": "concurrently -n API,UI -c blue,green \"npm run dev:api\" \"npm run dev:ui\"",
+    "dev:api": "npm run start:dev --workspace=api",
+    "dev:ui": "npm run dev --workspace=ui",
+    "build": "npm run build --workspace=api && npm run build --workspace=ui",
+    "build:api": "npm run build --workspace=api",
+    "build:ui": "npm run build --workspace=ui",
+    "start": "concurrently -n API,UI -c blue,green \"npm run start:prod --workspace=api\" \"npm run preview --workspace=ui\"",
+    "init-db": "bash scripts/init_db.sh",
+    "scheduler": "bash scripts/start_scheduler.sh",
+    "analyst": "bash scripts/run_market_analyst.sh",
+    "trader": "bash scripts/run_paper_trader.sh",
+    "retro": "bash scripts/run_retrospective.sh --force"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
