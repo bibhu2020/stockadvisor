@@ -13,6 +13,8 @@ RUN npm run build:ui
 # Stage 2: Build NestJS API
 FROM node:20-alpine AS api-builder
 WORKDIR /app
+# better-sqlite3 is a native module with no musl prebuilt binary — needs these to compile
+RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json ./
 COPY api/package.json ./api/
 COPY ui/package.json ./ui/
