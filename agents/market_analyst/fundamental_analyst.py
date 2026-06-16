@@ -119,11 +119,17 @@ def run(candidates: list[str], log) -> list[dict]:
         else:
             info["web_snippets"] = []
 
+        # Skip tickers with no price — delisted, invalid, or data unavailable
+        if not info.get("current_price"):
+            log(f"FundamentalAnalyst: {sym} — no price data, skipping (likely delisted or invalid)")
+            time.sleep(0.5)
+            continue
+
         info["fundamental_score"] = round(_score(info), 1)
         day_cache.put(key, info)
         results.append(info)
         time.sleep(0.5)
 
     results.sort(key=lambda x: -x["fundamental_score"])
-    log(f"FundamentalAnalyst: top 5 by score: {[r['symbol'] for r in results[:5]]}")
+    log(f"FundamentalAnalyst: top {len(results)} valid candidates by score: {[r['symbol'] for r in results[:10]]}")
     return results
