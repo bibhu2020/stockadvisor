@@ -30,6 +30,7 @@ RUN node_modules/.bin/nest build
 FROM node:20-alpine
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/api/node_modules ./api/node_modules
 COPY --from=api-builder /app/api/dist ./api/dist
 COPY --from=api-builder /app/api/package.json ./api/package.json
 COPY --from=ui-builder /app/ui/dist ./ui/dist
