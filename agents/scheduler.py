@@ -74,7 +74,7 @@ scheduler.add_job(
 )
 
 
-if __name__ == "__main__":
+def main():
     log.info("StockAdvisor scheduler starting...")
     for job in scheduler.get_jobs():
         log.info(f"  Scheduled: {job.name}")
@@ -82,3 +82,7 @@ if __name__ == "__main__":
         scheduler.start()
     except KeyboardInterrupt:
         log.info("Scheduler stopped.")
+
+
+if __name__ == "__main__":
+    main()

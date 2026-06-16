@@ -4,7 +4,9 @@ version = "1.0.0"
 description = "StockAdvisor AI agent system (Market Analyst, Paper Trader, Retrospective)"
 requires-python = ">=3.10"
 dependencies = [
+    "anthropic>=0.109.0",
     "openai>=1.30.0",
+    "psycopg2-binary>=2.9.0",
     "yfinance>=0.2.40",
     "pandas>=2.0.0",
     "numpy>=1.24.0",
@@ -25,7 +27,7 @@ stockadvisor-init-db    = "agents.core.db:init_db"
 stockadvisor-analyst    = "agents.market_analyst.run_market_analyst:main"
 stockadvisor-trader     = "agents.paper_trader.run_paper_trader:main"
 stockadvisor-retro      = "agents.retrospective.run_retrospective:main"
-stockadvisor-scheduler  = "agents.scheduler:scheduler"
+stockadvisor-scheduler  = "agents.scheduler:main"
 
 [build-system]
 requires = ["setuptools>=42"]
