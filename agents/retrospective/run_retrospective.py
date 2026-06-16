@@ -18,13 +18,14 @@ from sqlalchemy import select
 
 
 def is_last_sunday_of_month() -> bool:
-    today = date.today()
+    # Use CST/CDT — the cron fires Mon 5AM UTC which is still Sunday in Chicago
+    import pytz
+    chicago = pytz.timezone("America/Chicago")
+    today = datetime.now(chicago).date()
     if today.weekday() != 6:  # 6 = Sunday
         return False
-    # Is next Sunday in a different month?
-    next_sunday = today.day + 7
     _, days_in_month = monthrange(today.year, today.month)
-    return next_sunday > days_in_month
+    return (today.day + 7) > days_in_month
 
 
 def get_previous_month(today: date) -> tuple[int, int]:
@@ -105,4 +106,6 @@ if __name__ == "__main__":
     parser.add_argument("--force", action="store_true", help="Run regardless of date")
     parser.add_argument("--triggered-by", default="manual")
     args = parser.parse_args()
-    main(args.triggered_by, args.force)
+    # FORCE_RUN env var (set by GitHub Actions workflow_dispatch) overrides --force
+    force = args.force or os.getenv("FORCE_RUN", "false").lower() == "true"
+    main(args.triggered_by, force)
