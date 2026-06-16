@@ -1,5 +1,5 @@
 ---
-title: StockAdvisor
+title: AlphaForge
 emoji: 📈
 colorFrom: blue
 colorTo: indigo
