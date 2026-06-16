@@ -11,18 +11,20 @@ RUN npm ci
 FROM node:20-alpine AS ui-builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/ui/node_modules ./ui/node_modules
 COPY ui/ ./ui/
 WORKDIR /app/ui
 ENV VITE_API_URL=/api
-RUN /app/node_modules/.bin/vite build
+RUN node_modules/.bin/vite build
 
 # Stage 2: Build NestJS API
 FROM node:20-alpine AS api-builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/api/node_modules ./api/node_modules
 COPY api/ ./api/
 WORKDIR /app/api
-RUN /app/node_modules/.bin/nest build
+RUN node_modules/.bin/nest build
 
 # Stage 3: Production runtime
 FROM node:20-alpine
