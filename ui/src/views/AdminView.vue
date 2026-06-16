@@ -9,6 +9,7 @@ const settingsForm = ref<Record<string, string>>({})
 const expandedRun = ref<number | null>(null)
 const liveLog = ref<Record<number, string>>({})
 const triggering = ref<Record<string, boolean>>({})
+const dispatched = ref<Record<string, boolean>>({})
 const killing = ref<Record<number, boolean>>({})
 const toast = ref<{ msg: string; type: 'success' | 'error' } | null>(null)
 const confirm = ref<{ agent: typeof AGENTS[number] } | null>(null)
@@ -88,20 +89,26 @@ async function confirmTrigger() {
   triggering.value[agent.type] = true
   try {
     await api.post(`/agent-runs/trigger/${agent.type}`)
-    showToast(`${agent.label} dispatched (force run) — watching for new run…`, 'success')
+    triggering.value[agent.type] = false
+    dispatched.value[agent.type] = true
+    showToast(`${agent.label} dispatched — GitHub Action starting…`, 'success')
+
+    // Poll every 3s for up to 3 minutes (60 attempts)
     let attempts = 0
     const poll = setInterval(async () => {
       await fetchRuns()
       const hasNew = runs.value.some(
         (r) => r.agent_type === agent.type && ['running', 'pending'].includes(r.status),
       )
-      if (hasNew || ++attempts >= 20) clearInterval(poll)
-    }, 500)
+      if (hasNew || ++attempts >= 60) {
+        clearInterval(poll)
+        dispatched.value[agent.type] = false
+      }
+    }, 3000)
   } catch (err: unknown) {
+    triggering.value[agent.type] = false
     const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
     showToast(msg ?? `Failed to trigger ${agent.label}`, 'error')
-  } finally {
-    triggering.value[agent.type] = false
   }
 }
 
@@ -205,7 +212,7 @@ function lastRunFor(type: string) {
     <!-- ── Trigger Bar ──────────────────────────────────────────── -->
     <div class="trigger-bar">
       <div v-for="agent in AGENTS" :key="agent.type" class="trigger-tile"
-        :class="{ 'market-gated': !marketOpen }">
+        :class="{ 'market-gated': !marketOpen, 'tile-dispatched': dispatched[agent.type] }">
         <div class="tile-meta">
           <span class="tile-icon">{{ agent.icon }}</span>
           <div>
@@ -217,7 +224,10 @@ function lastRunFor(type: string) {
               </span>
             </div>
             <div class="tile-desc">{{ agent.desc }}</div>
-            <div v-if="lastRunFor(agent.type)" class="tile-last">
+            <div v-if="dispatched[agent.type]" class="tile-waiting">
+              <span class="waiting-dot"></span> GitHub Action starting — waiting for run…
+            </div>
+            <div v-else-if="lastRunFor(agent.type)" class="tile-last">
               Last run:
               <span :style="{ color: statusColor(lastRunFor(agent.type)!.status) }">
                 ● {{ lastRunFor(agent.type)!.status }}
@@ -228,11 +238,12 @@ function lastRunFor(type: string) {
         </div>
         <button
           class="run-btn"
-          :class="{ loading: triggering[agent.type], 'btn-force': !marketOpen }"
-          :disabled="triggering[agent.type]"
+          :class="{ loading: triggering[agent.type] || dispatched[agent.type], 'btn-force': !marketOpen }"
+          :disabled="triggering[agent.type] || dispatched[agent.type]"
           @click="requestTrigger(agent)"
         >
           <span v-if="triggering[agent.type]" class="spinner"></span>
+          <span v-else-if="dispatched[agent.type]" class="spinner"></span>
           <span v-else-if="!marketOpen">⚡ Force Run</span>
           <span v-else>▶ Run Now</span>
         </button>
@@ -354,8 +365,22 @@ function lastRunFor(type: string) {
 .tag-open   { background: #dcfce7; color: #15803d; }
 .tag-closed { background: #ffedd5; color: #9a3412; }
 .trigger-tile.market-gated { border-color: #fdba74; }
+.trigger-tile.tile-dispatched { border-color: #93c5fd; background: #eff6ff; }
 .tile-desc { font-size: 0.78rem; color: #9ca3af; line-height: 1.4; margin-bottom: 4px; }
 .tile-last { font-size: 0.75rem; color: #6b7280; }
+.tile-waiting {
+  font-size: 0.75rem; color: #1d4ed8; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+}
+.waiting-dot {
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%; background: #3b82f6;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
 .run-btn {
   width: 100%; padding: 10px; background: #1e3a5f; color: #fff; border: none;
   border-radius: 8px; font-weight: 600; font-size: 0.875rem; cursor: pointer;
