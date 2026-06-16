@@ -17,20 +17,17 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Serve Vue build static assets (CSS, JS, images) before NestJS routes
+  const uiIndex = path.join(UI_DIST, 'index.html');
   if (fs.existsSync(UI_DIST)) {
+    // Static assets (CSS, JS, images) — runs before NestJS router
     app.use(express.static(UI_DIST));
   }
-
-  // Initialize all NestJS routes
-  await app.init();
-
-  // SPA fallback: any request that wasn't handled by static files or API routes
-  // gets index.html so Vue Router can take over client-side
-  const uiIndex = path.join(UI_DIST, 'index.html');
   if (fs.existsSync(uiIndex)) {
-    const server = app.getHttpAdapter().getInstance();
-    server.use((_req: express.Request, res: express.Response) => {
+    // SPA fallback: non-API paths get index.html so Vue Router handles them.
+    // Must be registered before app.listen() (which triggers app.init() and
+    // registers NestJS's router) so it sits in front of NestJS's 404 handler.
+    app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+      if (req.path.startsWith('/api')) return next();
       res.sendFile(uiIndex);
     });
   }
