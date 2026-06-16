@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import * as fs from 'fs';
 import * as path from 'path';
 import { AgentRunsModule } from './agent-runs/agent-runs.module';
 import { AuthModule } from './auth/auth.module';
@@ -27,11 +25,8 @@ import { UsersModule } from './users/users.module';
 // Resolve root .env whether running from api/ (dev) or project root (prod)
 const ROOT_DIR = path.resolve(__dirname, '..', '..'); // api/dist → project root
 const ENV_PATH = path.join(ROOT_DIR, '.env');
-const UI_DIST  = path.join(ROOT_DIR, 'ui', 'dist');
 
-const serveStatic = fs.existsSync(UI_DIST)
-  ? [ServeStaticModule.forRoot({ rootPath: UI_DIST, renderPath: '/{*path}', exclude: ['/api/(.*)'] })]
-  : [];
+export const UI_DIST = path.join(ROOT_DIR, 'ui', 'dist');
 
 const ENTITIES = [
   User, Setting, Strategy, AgentRun, AnalystReport,
@@ -40,7 +35,6 @@ const ENTITIES = [
 
 @Module({
   imports: [
-    ...serveStatic,
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ENV_PATH }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
