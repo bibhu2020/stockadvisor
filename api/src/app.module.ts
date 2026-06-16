@@ -30,7 +30,7 @@ const ENV_PATH = path.join(ROOT_DIR, '.env');
 const UI_DIST  = path.join(ROOT_DIR, 'ui', 'dist');
 
 const serveStatic = fs.existsSync(UI_DIST)
-  ? [ServeStaticModule.forRoot({ rootPath: UI_DIST, renderPath: '/*', exclude: ['/api/(.*)'] })]
+  ? [ServeStaticModule.forRoot({ rootPath: UI_DIST, renderPath: '/{*path}', exclude: ['/api/(.*)'] })]
   : [];
 
 const ENTITIES = [
