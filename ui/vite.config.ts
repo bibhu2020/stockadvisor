@@ -15,20 +15,21 @@ export default defineConfig({
     vueDevTools(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-512x512-maskable.png'],
       manifest: {
         name: 'AlphaForge',
         short_name: 'AlphaForge',
         description: 'AI-Powered autonomous paper trading intelligence',
         theme_color: '#1e40af',
-        background_color: '#f3f4f6',
+        background_color: '#1e40af',
         display: 'standalone',
         start_url: '/',
         scope: '/',
         icons: [
-          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          { src: 'favicon.svg',              sizes: 'any',     type: 'image/svg+xml', purpose: 'any' },
+          { src: 'pwa-192x192.png',          sizes: '192x192', type: 'image/png',     purpose: 'any' },
+          { src: 'pwa-512x512.png',          sizes: '512x512', type: 'image/png',     purpose: 'any' },
+          { src: 'pwa-512x512-maskable.png', sizes: '512x512', type: 'image/png',     purpose: 'maskable' },
         ],
       },
       workbox: {
