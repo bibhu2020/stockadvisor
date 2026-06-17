@@ -15,7 +15,7 @@ COPY --from=deps /app/ui/node_modules ./ui/node_modules
 COPY ui/ ./ui/
 WORKDIR /app/ui
 ENV VITE_API_URL=/api
-RUN node_modules/.bin/vite build
+RUN PATH="/app/node_modules/.bin:/app/ui/node_modules/.bin:$PATH" vite build
 
 # Stage 2: Build NestJS API
 FROM node:20-alpine AS api-builder
