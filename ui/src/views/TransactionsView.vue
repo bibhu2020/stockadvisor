@@ -99,6 +99,7 @@ function exportCsv() {
 
     <div class="table-card">
       <div v-if="loading" class="loading">Loading...</div>
+      <div class="table-scroll">
       <table v-else-if="transactions.length" class="tx-table">
         <thead>
           <tr>
@@ -162,13 +163,14 @@ function exportCsv() {
           </tr>
         </tbody>
       </table>
+      </div>
       <p v-else class="empty">No transactions match the filters.</p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
 .page-h { font-size: 1.5rem; font-weight: 700; color: #1e3a5f; margin: 0; }
 .export-btn { padding: 8px 18px; background: #1e3a5f; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
 .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -177,7 +179,8 @@ function exportCsv() {
 }
 .filters button { padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; }
 .table-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.tx-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tx-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 860px; }
 .tx-table th { background: #f3f4f6; padding: 10px 12px; text-align: left; font-weight: 600; color: #6b7280; }
 .tx-table td { padding: 10px 12px; border-bottom: 1px solid #f9fafb; }
 .badge { padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
@@ -220,4 +223,10 @@ function exportCsv() {
   background-size: 200% 100%; animation: shimmer 1.2s infinite;
 }
 @keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+
+@media (max-width: 767px) {
+  .page-h { font-size: 1.2rem; }
+  .table-card { padding: 12px; }
+  .filters input, .filters select { font-size: 0.8rem; padding: 7px 10px; }
+}
 </style>

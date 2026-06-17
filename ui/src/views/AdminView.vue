@@ -292,6 +292,7 @@ function lastRunFor(type: string) {
 
     <!-- Users -->
     <div v-if="tab === 'users'" class="panel">
+      <div class="users-table-wrap">
       <table class="users-table">
         <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Since</th><th>Actions</th></tr></thead>
         <tbody>
@@ -307,6 +308,7 @@ function lastRunFor(type: string) {
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
     <!-- Settings -->
@@ -353,6 +355,8 @@ function lastRunFor(type: string) {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
   margin-bottom: 24px;
 }
+@media (max-width: 900px) { .trigger-bar { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .trigger-bar { grid-template-columns: 1fr; } }
 .trigger-tile {
   background: #fff; border-radius: 12px; padding: 18px 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e5e7eb;
@@ -442,7 +446,8 @@ function lastRunFor(type: string) {
 .run-error { color: #e74c3c; font-size: 0.8rem; margin-top: 8px; padding: 8px 12px; background: #fef2f2; border-radius: 6px; }
 
 /* ── Users ────────────────────────────────────────────────────── */
-.users-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.users-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.users-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 480px; }
 .users-table th { background: #f3f4f6; padding: 10px 12px; text-align: left; font-weight: 600; color: #6b7280; }
 .users-table td { padding: 10px 12px; border-bottom: 1px solid #f9fafb; }
 .role-badge { padding: 2px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
@@ -454,9 +459,9 @@ function lastRunFor(type: string) {
 
 /* ── Settings ─────────────────────────────────────────────────── */
 .settings-form { max-width: 500px; }
-.setting-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+.setting-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
 .setting-row label { width: 220px; font-size: 0.8rem; font-weight: 700; color: #374151; flex-shrink: 0; }
-.setting-row input { flex: 1; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; }
+.setting-row input { flex: 1; min-width: 0; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; }
 .save-btn { padding: 10px 24px; background: #1e3a5f; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-top: 8px; font-weight: 600; }
 .save-btn:hover { background: #2d4f7c; }
 
@@ -489,4 +494,15 @@ function lastRunFor(type: string) {
 .modal-enter-active .modal, .modal-leave-active .modal { transition: transform 0.2s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 .modal-enter-from .modal, .modal-leave-to .modal { transform: scale(0.95); }
+
+@media (max-width: 767px) {
+  .page-h { font-size: 1.2rem; margin-bottom: 14px; }
+  .panel { padding: 14px; }
+  .run-header { flex-wrap: wrap; gap: 6px; }
+  .run-type { min-width: 0; }
+  .run-status { min-width: 0; }
+  .tabs button { padding: 8px 14px; font-size: 0.82rem; }
+  .setting-row label { width: 100%; }
+  .settings-form { max-width: 100%; }
+}
 </style>

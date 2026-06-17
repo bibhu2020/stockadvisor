@@ -155,6 +155,7 @@ function statusColor(s: string) {
     <!-- Recent Transactions -->
     <div class="section-card">
       <h3>Recent Transactions</h3>
+      <div class="table-scroll">
       <table class="tx-table" v-if="recentTx.length">
         <thead><tr><th>Symbol</th><th>Action</th><th>Price</th><th>Qty</th><th>P&L</th><th>Date</th></tr></thead>
         <tbody>
@@ -170,6 +171,7 @@ function statusColor(s: string) {
           </tr>
         </tbody>
       </table>
+      </div>
       <p v-else class="empty">No transactions yet</p>
     </div>
   </div>
@@ -195,7 +197,8 @@ function statusColor(s: string) {
 .agent-name { font-weight: 700; font-size: 0.8rem; color: #374151; margin-bottom: 4px; }
 .agent-status { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
 .agent-time { font-size: 0.75rem; color: #9ca3af; }
-.tx-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tx-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 520px; }
 .tx-table th { background: #f3f4f6; padding: 8px 12px; text-align: left; font-weight: 600; color: #6b7280; }
 .tx-table td { padding: 8px 12px; border-bottom: 1px solid #f3f4f6; }
 .action-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
@@ -204,4 +207,14 @@ function statusColor(s: string) {
 .green { color: #27ae60; font-weight: 600; }
 .red { color: #e74c3c; font-weight: 600; }
 .empty { color: #9ca3af; font-size: 0.875rem; padding: 16px 0; }
+
+@media (max-width: 767px) {
+  .page-h { font-size: 1.2rem; margin-bottom: 14px; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi-card { padding: 14px; }
+  .kpi-value { font-size: 1.4rem; }
+  .chart-row { grid-template-columns: 1fr; gap: 12px; }
+  .section-card { padding: 14px; }
+  .agent-card { min-width: 0; flex: 1 1 140px; }
+}
 </style>

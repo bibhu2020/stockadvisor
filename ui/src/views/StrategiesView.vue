@@ -84,8 +84,8 @@ function getParams(s: any) {
 .strategy-card.active { border-color: #1e3a5f; }
 .strategy-card.highlighted { border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(29,78,216,0.15); }
 .strategy-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 16px 20px; cursor: pointer;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 16px 20px; cursor: pointer; gap: 8px;
 }
 .strategy-header:hover { background: #f9fafb; }
 .version { background: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-right: 10px; }
@@ -93,7 +93,7 @@ function getParams(s: any) {
 .source-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-left: 8px; }
 .source-badge.initial { background: #fef3c7; color: #92400e; }
 .source-badge.retrospective { background: #ede9fe; color: #5b21b6; }
-.right { display: flex; align-items: center; gap: 16px; font-size: 0.85rem; }
+.right { display: flex; align-items: center; gap: 16px; font-size: 0.85rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
 .date { color: #9ca3af; }
 .green { color: #27ae60; font-weight: 600; }
 .red { color: #e74c3c; font-weight: 600; }
@@ -102,9 +102,16 @@ function getParams(s: any) {
 .desc, .params { margin-top: 16px; }
 .desc h4, .params h4 { font-size: 0.85rem; font-weight: 700; color: #374151; margin-bottom: 8px; }
 .desc p { font-size: 0.875rem; color: #6b7280; line-height: 1.6; }
-.param-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.param-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
 .param-item { background: #f9fafb; border-radius: 8px; padding: 10px; }
 .param-key { display: block; font-size: 0.75rem; color: #9ca3af; font-weight: 600; margin-bottom: 4px; }
 .param-val { font-size: 0.875rem; color: #1e3a5f; font-weight: 600; }
 .empty { color: #9ca3af; }
+
+@media (max-width: 767px) {
+  .page-h { font-size: 1.2rem; margin-bottom: 14px; }
+  .strategy-header { padding: 12px 14px; }
+  .strategy-body { padding: 0 14px 14px; }
+  .right { gap: 10px; }
+}
 </style>
