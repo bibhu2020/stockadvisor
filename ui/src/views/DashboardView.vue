@@ -155,8 +155,8 @@ function statusColor(s: string) {
     <!-- Recent Transactions -->
     <div class="section-card">
       <h3>Recent Transactions</h3>
-      <div class="table-scroll">
-      <table class="tx-table" v-if="recentTx.length">
+      <div v-if="recentTx.length" class="table-scroll">
+      <table class="tx-table">
         <thead><tr><th>Symbol</th><th>Action</th><th>Price</th><th>Qty</th><th>P&L</th><th>Date</th></tr></thead>
         <tbody>
           <tr v-for="tx in recentTx" :key="tx.id">

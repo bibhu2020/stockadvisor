@@ -99,8 +99,8 @@ function exportCsv() {
 
     <div class="table-card">
       <div v-if="loading" class="loading">Loading...</div>
-      <div class="table-scroll">
-      <table v-else-if="transactions.length" class="tx-table">
+      <div v-else-if="transactions.length" class="table-scroll">
+      <table class="tx-table">
         <thead>
           <tr>
             <th>Symbol</th><th>Action</th><th>Exec Price</th><th>Mkt Price</th><th>Qty</th>
