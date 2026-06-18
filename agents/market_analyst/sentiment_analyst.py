@@ -40,10 +40,15 @@ Rules:
 - Return ONLY valid JSON."""
 
 
-def run(candidates: list[str], fundamentals: list[dict], log) -> list[dict]:
+def get_prompt(strategy_params: dict) -> str:
+    return strategy_params.get("prompts", {}).get("sentiment_analyst") or SYSTEM_PROMPT
+
+
+def run(candidates: list[str], fundamentals: list[dict], log,
+        strategy_params: dict | None = None) -> list[dict]:
     """Fetch news for all candidates, then one batch LLM call for all sentiment analysis."""
     fund_map = {f["symbol"]: f for f in fundamentals}
-    agent    = BaseAgent(role="SentimentAnalyst", system_prompt=SYSTEM_PROMPT, tools=[])
+    agent    = BaseAgent(role="SentimentAnalyst", system_prompt=get_prompt(strategy_params or {}), tools=[])
 
     # ── Step 1: collect news for all tickers (HTTP only, no LLM) ──────────────
     news_map:   dict[str, list] = {}

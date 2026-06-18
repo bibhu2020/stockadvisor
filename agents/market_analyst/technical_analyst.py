@@ -178,8 +178,12 @@ def _batch_llm_analysis(agent: BaseAgent, items: list[dict], log) -> None:
         day_cache.put(f"technicals_{sym}", d)
 
 
-def run(candidates: list[str], log) -> list[dict]:
-    agent     = BaseAgent(role="TechnicalAnalyst", system_prompt=SYSTEM_PROMPT, tools=[])
+def get_prompt(strategy_params: dict) -> str:
+    return strategy_params.get("prompts", {}).get("technical_analyst") or SYSTEM_PROMPT
+
+
+def run(candidates: list[str], log, strategy_params: dict | None = None) -> list[dict]:
+    agent     = BaseAgent(role="TechnicalAnalyst", system_prompt=get_prompt(strategy_params or {}), tools=[])
     results   = []
     needs_llm = []
 

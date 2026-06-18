@@ -229,7 +229,8 @@ def run(
         "research": research,
     }
 
-    agent = BaseAgent(role="Synthesizer", system_prompt=SYSTEM_PROMPT)
+    synth_prompt = params.get("prompts", {}).get("synthesizer") or SYSTEM_PROMPT
+    agent = BaseAgent(role="Synthesizer", system_prompt=synth_prompt)
     log("Synthesizer: generating final picks (institutional-quality mode)...")
     result = agent.run(
         "Based on the full research package, select the top 5 picks for the next 30 days. "

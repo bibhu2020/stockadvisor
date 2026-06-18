@@ -218,6 +218,7 @@ def _seed_strategy(session: Session):
         "preferred_sectors": [],
         "avoid_earnings_within_days": 5,
         "entry_timing_rules": "Buy at open or within 1% of analyst entry price. Prefer morning entries before 11 AM.",
+        "prompts": {},  # populated by retrospective agent; empty = use hardcoded defaults
     }
     strategy = Strategy(
         version=1,

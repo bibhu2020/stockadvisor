@@ -36,6 +36,21 @@ def main(triggered_by: str = "scheduler"):
     with AgentOrchestrator("market_analyst", triggered_by) as orch:
         session = orch.get_session()
 
+        # Load active strategy first — prompts and params flow to every agent
+        strategy = get_active_strategy(session)
+        if not strategy:
+            orch.log("No active strategy found — using defaults.")
+            strategy_params = {}
+            strategy_dict   = {"description": "Balanced momentum", "parameters": "{}"}
+        else:
+            strategy_params = strategy.get_parameters()
+            strategy_dict   = {
+                "description": strategy.description,
+                "parameters":  strategy.parameters,
+            }
+            prompt_count = len(strategy_params.get("prompts", {}))
+            orch.log(f"Strategy v{strategy.version} loaded ({prompt_count} custom prompts active).")
+
         # 1. Trend Spotter
         candidates = trend_spotter.run(orch.log)
         if not candidates:
@@ -43,12 +58,12 @@ def main(triggered_by: str = "scheduler"):
             return
 
         # 2. Fundamental Analysis
-        fundamentals = fundamental_analyst.run(candidates, orch.log)
+        fundamentals = fundamental_analyst.run(candidates, orch.log, strategy_params)
 
         # 3. Technical Analysis
-        technicals = technical_analyst.run(candidates, orch.log)
+        technicals = technical_analyst.run(candidates, orch.log, strategy_params)
 
-        # 4. Sentiment Analysis (only top 15 by combined score to save API calls)
+        # 4. Sentiment Analysis (top 15 by combined score)
         fund_map = {f["symbol"]: f.get("fundamental_score", 0) for f in fundamentals}
         tech_map = {t["symbol"]: t.get("technical_score", 0) for t in technicals}
         top15 = sorted(
@@ -56,22 +71,12 @@ def main(triggered_by: str = "scheduler"):
             key=lambda s: fund_map.get(s, 0) + tech_map.get(s, 0),
             reverse=True
         )[:15]
-        sentiments = sentiment_analyst.run(top15, fundamentals, orch.log)
+        sentiments = sentiment_analyst.run(top15, fundamentals, orch.log, strategy_params)
 
         # 5. Volatility
         vol_data = volatility_analyst.run(candidates, orch.log)
 
-        # 6. Synthesize — load active strategy
-        strategy = get_active_strategy(session)
-        if not strategy:
-            orch.log("No active strategy found — using defaults.")
-            strategy_dict = {"description": "Balanced momentum", "parameters": "{}"}
-        else:
-            strategy_dict = {
-                "description": strategy.description,
-                "parameters": strategy.parameters,
-            }
-
+        # 6. Synthesize
         synthesis = synthesizer.run(
             fundamentals, technicals, sentiments, vol_data, strategy_dict, orch.log
         )
