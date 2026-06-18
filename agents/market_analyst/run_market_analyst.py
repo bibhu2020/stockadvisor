@@ -1,7 +1,7 @@
 """Entry point for the Market Analyst agent pipeline."""
 import os
 import sys
-from datetime import date
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 # Load .env
@@ -14,8 +14,8 @@ from agents.core.market_hours import check_or_exit
 check_or_exit("Market Analyst")
 
 from agents.core.db import (
-    AnalystReport, Notification, SessionLocal, User, get_active_strategy,
-    get_setting, init_db
+    AnalystReport, Notification, Position, SessionLocal, User,
+    get_active_strategy, get_setting, init_db
 )
 from agents.core.orchestrator import AgentOrchestrator
 from agents.core.pdf_generator import build_analyst_report
@@ -27,7 +27,30 @@ from agents.market_analyst import (
     trend_spotter,
     volatility_analyst,
 )
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
+
+_ANALYST_REPORT_RETENTION_DAYS = 30
+
+
+def _purge_old_analyst_reports(session, log) -> None:
+    """Delete analyst_report rows older than retention window, nulling Position FKs first."""
+    cutoff = datetime.utcnow() - timedelta(days=_ANALYST_REPORT_RETENTION_DAYS)
+
+    old_ids = session.execute(
+        select(AnalystReport.id).where(AnalystReport.created_at < cutoff)
+    ).scalars().all()
+
+    if not old_ids:
+        log(f"Report cleanup: no reports older than {_ANALYST_REPORT_RETENTION_DAYS} days.")
+        return
+
+    session.execute(
+        update(Position)
+        .where(Position.analyst_report_id.in_(old_ids))
+        .values(analyst_report_id=None)
+    )
+    session.execute(delete(AnalystReport).where(AnalystReport.id.in_(old_ids)))
+    log(f"Report cleanup: deleted {len(old_ids)} analyst report(s) older than {_ANALYST_REPORT_RETENTION_DAYS} days.")
 
 
 def main(triggered_by: str = "scheduler"):
@@ -119,6 +142,11 @@ def main(triggered_by: str = "scheduler"):
             ))
         session.commit()
         orch.log("Notifications sent to all users.")
+
+        # Housekeeping — purge analyst reports older than 30 days
+        orch.log("--- Housekeeping ---")
+        _purge_old_analyst_reports(session, orch.log)
+        session.commit()
 
 
 if __name__ == "__main__":
