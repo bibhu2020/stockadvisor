@@ -574,11 +574,50 @@ function gain(p: any) {
 .risk .ab-label { color: #92400e; }
 .risk p { color: #78716c; }
 
+/* ── Tablet (< 900px) ──────────────────────────────────────────── */
 @media (max-width: 900px) {
   .grid-header { display: none; }
-  .report-row  { grid-template-columns: 1fr 1fr; grid-template-rows: auto; gap: 8px; padding: 14px; }
-  .col-gain, .col-conf { display: none; }
+  .report-row {
+    grid-template-columns: 130px 1fr;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      "date    market"
+      "picks   picks"
+      "conf    actions";
+    gap: 8px;
+    padding: 14px;
+  }
+  .col-date    { grid-area: date; }
+  .col-market  { grid-area: market; }
+  .col-picks   { grid-area: picks; }
+  .col-conf    { grid-area: conf; }
+  .col-gain    { display: none; }
+  .col-actions { grid-area: actions; justify-content: flex-end; }
 }
+
+/* ── Mobile (< 768px) ──────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .report-row { grid-template-columns: auto 1fr; gap: 6px 10px; padding: 12px; }
+  .page-h { font-size: 1.2rem; }
+
+  /* Modal: bottom sheet */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal         { border-radius: 24px 24px 0 0; max-height: 95vh; }
+  .modal-head    { flex-direction: column; gap: 10px; align-items: flex-start; padding: 16px 18px; }
+  .modal-head-actions { align-self: flex-end; }
+  .modal-title-group  { gap: 12px; }
+  .modal-head h3      { font-size: 0.95rem; }
+  .modal-body         { padding: 14px 16px; gap: 12px; }
+
+  /* Price ribbon: 3 cells per row */
+  .price-ribbon       { flex-wrap: wrap; }
+  .pr-cell            { flex: 0 0 33.333%; border-right: none; border-bottom: 1px solid #f1f5f9; }
+
+  /* Modal close button — larger tap target */
+  .modal-close { width: 40px; height: 40px; font-size: 1rem; }
+}
+
+/* ── Small mobile (< 600px) ────────────────────────────────────── */
 @media (max-width: 600px) {
   .ab-pair { grid-template-columns: 1fr; }
   .ab-pair .ab:first-child { border-right: none; }

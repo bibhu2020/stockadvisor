@@ -110,10 +110,10 @@ function exportCsv() {
         </thead>
         <tbody>
           <tr v-for="tx in transactions" :key="tx.id" :class="{ 'row-closed': tx.pos_status === 'closed' }">
-            <td><strong>{{ tx.symbol }}</strong></td>
-            <td><span :class="['badge', tx.action.toLowerCase()]">{{ tx.action }}</span></td>
-            <td class="num">${{ tx.price?.toFixed(2) }}</td>
-            <td class="num mkt-cell">
+            <td data-label="Symbol"><strong>{{ tx.symbol }}</strong></td>
+            <td data-label="Action"><span :class="['badge', tx.action.toLowerCase()]">{{ tx.action }}</span></td>
+            <td data-label="Exec Price" class="num">${{ tx.price?.toFixed(2) }}</td>
+            <td data-label="Mkt Price" class="num mkt-cell">
               <template v-if="pricesLoading">
                 <span class="price-loading"></span>
               </template>
@@ -126,21 +126,21 @@ function exportCsv() {
               </template>
               <span v-else class="muted">—</span>
             </td>
-            <td class="num">{{ tx.quantity }}</td>
+            <td data-label="Qty" class="num">{{ tx.quantity }}</td>
 
             <!-- Position price levels (from linked position) -->
-            <td class="num muted">
+            <td data-label="Entry" class="num muted">
               {{ tx.pos_entry_price != null ? '$' + tx.pos_entry_price.toFixed(2) : '—' }}
             </td>
-            <td class="num green">
+            <td data-label="Target" class="num green">
               {{ tx.pos_exit_target_price != null ? '$' + tx.pos_exit_target_price.toFixed(2) : '—' }}
             </td>
-            <td class="num red">
+            <td data-label="Stop Loss" class="num red">
               {{ tx.pos_stop_loss_price != null ? '$' + tx.pos_stop_loss_price.toFixed(2) : '—' }}
             </td>
 
             <!-- Trigger: what will/did fire the next trade -->
-            <td>
+            <td data-label="Trigger">
               <span v-if="tx.pos_close_reason" :class="['trigger-chip', tx.pos_close_reason]">
                 {{ closeReasonLabel(tx.pos_close_reason) }}
               </span>
@@ -150,16 +150,16 @@ function exportCsv() {
               <span v-else class="muted">—</span>
             </td>
 
-            <td :class="tx.realized_pnl > 0 ? 'green bold' : tx.realized_pnl < 0 ? 'red bold' : 'muted'">
+            <td data-label="P&L" :class="tx.realized_pnl > 0 ? 'green bold' : tx.realized_pnl < 0 ? 'red bold' : 'muted'">
               {{ tx.realized_pnl != null ? (tx.realized_pnl >= 0 ? '+' : '') + '$' + tx.realized_pnl.toFixed(2) : '—' }}
             </td>
-            <td>
+            <td data-label="Strategy">
               <button v-if="tx.strategy_id && strategyMap[tx.strategy_id]" class="strat-link" @click="goToStrategy(tx.strategy_id)">
                 v{{ strategyMap[tx.strategy_id].version }}
               </button>
               <span v-else class="muted">—</span>
             </td>
-            <td class="muted">{{ tx.executed_at?.slice(0,16) }}</td>
+            <td data-label="Date" class="muted">{{ tx.executed_at?.slice(0,16) }}</td>
           </tr>
         </tbody>
       </table>
@@ -225,8 +225,57 @@ function exportCsv() {
 @keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
 
 @media (max-width: 767px) {
-  .page-h { font-size: 1.2rem; }
-  .table-card { padding: 12px; }
-  .filters input, .filters select { font-size: 0.8rem; padding: 7px 10px; }
+  .page-h  { font-size: 1.2rem; }
+  .filters { gap: 8px; }
+  .filters input, .filters select { font-size: 0.8rem; padding: 7px 10px; flex: 1 1 calc(50% - 4px); }
+  .filters button { width: 100%; }
+
+  /* Card-style rows instead of scrolling table */
+  .table-card   { padding: 0; background: transparent; box-shadow: none; }
+  .table-scroll { overflow-x: visible; }
+  .tx-table     { min-width: 0; }
+  .tx-table thead { display: none; }
+  .tx-table, .tx-table tbody { display: block; }
+
+  .tx-table tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    border: 1px solid #f1f5f9;
+  }
+  .tx-table tr.row-closed { opacity: 0.65; }
+
+  .tx-table td {
+    display: flex; flex-direction: column;
+    padding: 5px 0; border: none; font-size: 0.85rem;
+  }
+  .tx-table td::before {
+    content: attr(data-label);
+    font-size: 0.63rem; font-weight: 700; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px;
+  }
+
+  /* Explicit grid placement for visible cells */
+  .tx-table td[data-label="Symbol"]     { grid-column: 1; grid-row: 1; }
+  .tx-table td[data-label="Action"]     { grid-column: 2; grid-row: 1; align-items: flex-end; }
+  .tx-table td[data-label="Exec Price"] { grid-column: 1; grid-row: 2; }
+  .tx-table td[data-label="P&L"]        { grid-column: 2; grid-row: 2; align-items: flex-end; }
+  .tx-table td[data-label="Trigger"]    { grid-column: 1; grid-row: 3; }
+  .tx-table td[data-label="Date"]       { grid-column: 2; grid-row: 3; align-items: flex-end; }
+
+  /* Hide secondary columns */
+  .tx-table td[data-label="Mkt Price"],
+  .tx-table td[data-label="Qty"],
+  .tx-table td[data-label="Entry"],
+  .tx-table td[data-label="Target"],
+  .tx-table td[data-label="Stop Loss"],
+  .tx-table td[data-label="Strategy"] { display: none; }
+
+  .num { text-align: left; }
 }
 </style>

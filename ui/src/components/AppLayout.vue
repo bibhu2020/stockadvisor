@@ -58,7 +58,6 @@ function logout() {
         <RouterLink to="/transactions" class="nav-item"><span class="icon">💱</span><span v-if="sidebarOpen">Transactions</span></RouterLink>
         <RouterLink to="/reports"     class="nav-item"><span class="icon">📋</span><span v-if="sidebarOpen">Reports</span></RouterLink>
         <RouterLink to="/strategies"  class="nav-item"><span class="icon">🧠</span><span v-if="sidebarOpen">Strategies</span></RouterLink>
-        <RouterLink to="/how-it-works"  class="nav-item"><span class="icon">💡</span><span v-if="sidebarOpen">How It Works</span></RouterLink>
         <RouterLink v-if="auth.isAdmin" to="/admin" class="nav-item"><span class="icon">⚙️</span><span v-if="sidebarOpen">Admin</span></RouterLink>
       </nav>
       <button class="toggle-btn" @click="sidebarOpen = !sidebarOpen">
@@ -93,7 +92,6 @@ function logout() {
       <RouterLink to="/transactions" class="bn-item"><span class="bn-icon">💱</span><span class="bn-label">Trades</span></RouterLink>
       <RouterLink to="/reports"      class="bn-item"><span class="bn-icon">📋</span><span class="bn-label">Reports</span></RouterLink>
       <RouterLink to="/strategies"   class="bn-item"><span class="bn-icon">🧠</span><span class="bn-label">Strategy</span></RouterLink>
-      <RouterLink to="/how-it-works" class="bn-item"><span class="bn-icon">💡</span><span class="bn-label">How It Works</span></RouterLink>
       <RouterLink v-if="auth.isAdmin" to="/admin" class="bn-item"><span class="bn-icon">⚙️</span><span class="bn-label">Admin</span></RouterLink>
       <RouterLink to="/profile"      class="bn-item"><span class="bn-icon">👤</span><span class="bn-label">Profile</span></RouterLink>
     </nav>
