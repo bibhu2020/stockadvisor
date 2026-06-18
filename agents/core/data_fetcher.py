@@ -335,23 +335,46 @@ def get_yahoo_trending() -> list[str]:
         return []
 
 
-def scrape_finviz_trending() -> list[str]:
-    """Scrape Finviz most active / top gainers."""
-    tickers = []
+def get_yahoo_gainers() -> list[str]:
+    """Fetch top-gaining and most-active tickers from Yahoo Finance."""
+    tickers: list[str] = []
+
+    # Try screener JSON API first (no HTML parsing)
+    for scr_id in ("day_gainers", "most_actives"):
+        try:
+            url = (
+                "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
+                f"?formatted=false&lang=en-US&region=US&scrIds={scr_id}&count=25"
+            )
+            resp = requests.get(url, headers=HEADERS, timeout=15)
+            data = resp.json()
+            for q in data["finance"]["result"][0]["quotes"]:
+                sym = q.get("symbol", "")
+                if sym and sym.isalpha() and 1 <= len(sym) <= 5:
+                    tickers.append(sym)
+        except Exception:
+            pass
+
+    if tickers:
+        return list(dict.fromkeys(tickers))[:20]
+
+    # Fallback: scrape HTML pages (same selector pattern as get_yahoo_trending)
     for url in [
-        "https://finviz.com/screener.ashx?v=110&s=ta_topgainers",
-        "https://finviz.com/screener.ashx?v=110&o=-volume",
+        "https://finance.yahoo.com/most-active/",
+        "https://finance.yahoo.com/gainers/",
     ]:
         try:
             resp = requests.get(url, headers=HEADERS, timeout=15)
             soup = BeautifulSoup(resp.text, "lxml")
-            for a in soup.select("a.screener-link-primary"):
-                text = a.get_text(strip=True)
-                if text.isupper() and 1 <= len(text) <= 5:
-                    tickers.append(text)
+            for a in soup.select("a[data-testid='quoteLink'], a[href*='/quote/']"):
+                href = a.get("href", "")
+                m = re.search(r"/quote/([A-Z]{1,5})(?:/|$|\?)", href)
+                if m:
+                    tickers.append(m.group(1))
             _sleep()
         except Exception:
             pass
+
     return list(dict.fromkeys(tickers))[:20]
 
 

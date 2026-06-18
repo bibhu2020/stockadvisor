@@ -3,7 +3,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from agents.core.data_fetcher import (
-    get_yahoo_trending, scrape_finviz_trending, get_reddit_hot_tickers
+    get_yahoo_trending, get_yahoo_gainers, get_reddit_hot_tickers
 )
 from agents.core import day_cache
 
@@ -43,32 +43,36 @@ def run(log) -> list[str]:
         return cached
 
     log("TrendSpotter: fetching Yahoo Finance trending...")
-    yahoo  = set(get_yahoo_trending())
-    log(f"  Yahoo: {sorted(yahoo)[:10]}")
+    yahoo   = set(get_yahoo_trending())
+    log(f"  Yahoo ({len(yahoo)}): {sorted(yahoo)}")
 
-    log("TrendSpotter: fetching Finviz top gainers...")
-    finviz = set(scrape_finviz_trending())
-    log(f"  Finviz: {sorted(finviz)[:10]}")
+    log("TrendSpotter: fetching Yahoo Finance gainers/most-active...")
+    gainers = set(get_yahoo_gainers())
+    log(f"  Gainers ({len(gainers)}): {sorted(gainers)}")
 
     log("TrendSpotter: fetching Reddit hot tickers...")
-    reddit = set(get_reddit_hot_tickers())
-    log(f"  Reddit: {sorted(reddit)[:10]}")
+    reddit  = set(get_reddit_hot_tickers())
+    log(f"  Reddit ({len(reddit)}): {sorted(reddit)}")
 
-    # Score by source weight; track how many sources each ticker appears in
+    # Score by source weight; track which sources each ticker appears in
     score:   dict[str, int] = {}
-    sources: dict[str, int] = {}
+    sources: dict[str, set] = {}
 
-    for sym, pts in [(s, 2) for s in yahoo] + [(s, 3) for s in finviz] + [(s, 1) for s in reddit]:
+    for sym, src, pts in (
+        [(s, "Yahoo",   2) for s in yahoo]   +
+        [(s, "Gainers", 3) for s in gainers] +
+        [(s, "Reddit",  1) for s in reddit]
+    ):
         if sym in NOISE or not _valid_ticker(sym):
             continue
-        score[sym]   = score.get(sym, 0) + pts
-        sources[sym] = sources.get(sym, 0) + 1
+        score[sym] = score.get(sym, 0) + pts
+        sources.setdefault(sym, set()).add(src)
 
-    ranked = sorted(score, key=lambda x: (-sources[x], -score[x]))
+    ranked = sorted(score, key=lambda x: (-len(sources[x]), -score[x]))
 
     # Prefer tickers seen in 2+ sources; fill remainder with best single-source
-    multi  = [s for s in ranked if sources[s] >= 2]
-    single = [s for s in ranked if sources[s] == 1]
+    multi  = [s for s in ranked if len(sources[s]) >= 2]
+    single = [s for s in ranked if len(sources[s]) == 1]
 
     if len(multi) >= MIN_CANDIDATES:
         candidates = multi[:MAX_CANDIDATES]
@@ -76,9 +80,13 @@ def run(log) -> list[str]:
         candidates = multi + single[: max(0, MIN_CANDIDATES - len(multi))]
         candidates = candidates[:MAX_CANDIDATES]
 
+    def _src_label(sym: str) -> str:
+        return "+".join(sorted(sources.get(sym, {"?"})))
+
+    detail = [f"{s}({_src_label(s)})" for s in candidates]
     log(
         f"TrendSpotter: {len(multi)} multi-source, {len(single)} single-source. "
-        f"Selected {len(candidates)}: {candidates}"
+        f"Selected {len(candidates)}: {detail}"
     )
     day_cache.put(CACHE_KEY, candidates)
     return candidates
