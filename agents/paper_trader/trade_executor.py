@@ -7,7 +7,7 @@ from agents.core.db import (
     Notification, Position, PortfolioSnapshot, Setting, Transaction,
     get_setting
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 
@@ -66,7 +66,21 @@ def execute_sells(session: Session, sell_orders: list[dict],
 
 def execute_buys(session: Session, buy_orders: list[dict], last_report,
                  strategy_id: int, run_id: int, buying_power: float, log) -> float:
-    """Execute all BUY orders. Returns total amount spent."""
+    """Execute all BUY orders. Returns total amount spent.
+
+    Hard cap: total capital deployed (existing open positions + new buys) can
+    never exceed the buying_power available at the start of this execution.
+    """
+    # Total cost basis already locked in open positions
+    open_cost = session.execute(
+        select(func.sum(Position.cost_basis)).where(Position.status == "open")
+    ).scalar() or 0.0
+
+    # Total capital = cash on hand + what's already deployed
+    total_capital = round(buying_power + open_cost, 2)
+    log(f"Capital check: total=${total_capital:.2f} "
+        f"deployed=${open_cost:.2f} available=${buying_power:.2f}")
+
     spent = 0.0
     for order in buy_orders:
         sym    = order["symbol"]
@@ -74,8 +88,18 @@ def execute_buys(session: Session, buy_orders: list[dict], last_report,
         qty    = order.get("quantity", 1)
         amount = round(price * qty, 2)
 
-        if amount > buying_power - spent:
-            log(f"  {sym}: insufficient buying power — skip")
+        # Hard cap: existing deployed + already spent this run + this order ≤ total capital
+        if open_cost + spent + amount > total_capital:
+            log(f"  {sym}: would exceed capital cap "
+                f"(deployed=${open_cost + spent:.2f} + ${amount:.2f} > cap=${total_capital:.2f}) — skip")
+            continue
+
+        # Live buying-power check: re-read from session identity map which reflects
+        # _update_buying_power mutations from earlier buys in this same run
+        live_bp = float(get_setting(session, "buying_power", "0"))
+        if amount > live_bp:
+            log(f"  {sym}: insufficient buying power "
+                f"(${live_bp:.2f} available, ${amount:.2f} needed) — skip")
             continue
 
         # Find analyst pick for stop/exit targets

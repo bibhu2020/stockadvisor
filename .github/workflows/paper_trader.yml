@@ -21,6 +21,10 @@ on:
         required: false
         default: 'true'
 
+concurrency:
+  group: paper-trader
+  cancel-in-progress: false   # let the running job finish; queue the next
+
 jobs:
   run:
     name: Run Paper Trader Agent
