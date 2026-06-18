@@ -193,16 +193,11 @@ def init_db():
 
 
 def _seed_settings(session: Session):
-    defaults = {
-        "buying_power": "5000",
-        "stop_loss_pct": "15",
-        "profit_target_pct": "10",
-        "max_positions": "5",
-        "confidence_threshold": "70",
-    }
-    for key, value in defaults.items():
-        if not session.get(Setting, key):
-            session.add(Setting(key=key, value=value))
+    # Only buying_power lives in settings — it changes dynamically with every trade.
+    # All other trading parameters (stop_loss_pct, profit_target_pct, max_positions,
+    # confidence_threshold, position_size_pct) are owned by the active strategy.
+    if not session.get(Setting, "buying_power"):
+        session.add(Setting(key="buying_power", value="5000"))
 
 
 def _default_prompts() -> dict:

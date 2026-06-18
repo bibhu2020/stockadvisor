@@ -63,18 +63,19 @@ def main(triggered_by: str = "scheduler"):
     with AgentOrchestrator("paper_trader", triggered_by) as orch:
         session = orch.get_session()
 
-        # Load config
-        stop_loss_pct    = float(get_setting(session, "stop_loss_pct", "15"))
-        profit_target_pct= float(get_setting(session, "profit_target_pct", "10"))
-        buying_power     = float(get_setting(session, "buying_power", "5000"))
-        strategy         = get_active_strategy(session)
+        # Load config — all trading params come from the active strategy;
+        # buying_power is the only dynamic value kept in settings.
+        strategy = get_active_strategy(session)
 
         if not strategy:
             orch.log("No active strategy — aborting paper trader.")
             return
 
-        strategy_id = strategy.id
+        strategy_id     = strategy.id
         strategy_params = strategy.get_parameters()
+        stop_loss_pct     = float(strategy_params.get("stop_loss_pct", 15))
+        profit_target_pct = float(strategy_params.get("profit_target_pct", 5))
+        buying_power      = float(get_setting(session, "buying_power", "5000"))
         orch.log(f"Strategy: {strategy.name} (v{strategy.version})")
         orch.log(f"Buying power: ${buying_power:.2f}")
 
