@@ -400,6 +400,36 @@ def get_reddit_hot_tickers() -> list[str]:
     return [t for t, _ in sorted(tickers.items(), key=lambda x: -x[1])][:20]
 
 
+def get_stocktwits_trending() -> list[str]:
+    """Fetch trending tickers from StockTwits public API."""
+    try:
+        url = "https://api.stocktwits.com/api/2/trending/symbols.json"
+        resp = requests.get(url, headers=HEADERS, timeout=15)
+        data = resp.json()
+        return [s["symbol"] for s in data.get("symbols", []) if s.get("symbol")]
+    except Exception:
+        return []
+
+
+def get_nasdaq_most_active() -> list[str]:
+    """Fetch most-active tickers by volume from the NASDAQ screener API."""
+    tickers: list[str] = []
+    for exchange in ("nasdaq", "nyse", "amex"):
+        try:
+            url = (
+                "https://api.nasdaq.com/api/screener/stocks"
+                f"?tableonly=true&limit=25&exchange={exchange}&type=volume"
+            )
+            resp = requests.get(url, headers=HEADERS, timeout=15)
+            for row in resp.json().get("data", {}).get("table", {}).get("rows", []):
+                sym = (row.get("symbol") or "").strip()
+                if sym and sym.isalpha() and 1 <= len(sym) <= 5:
+                    tickers.append(sym)
+        except Exception:
+            pass
+    return list(dict.fromkeys(tickers))[:30]
+
+
 # ── News & Sentiment ──────────────────────────────────────────────────────────
 
 def fetch_yahoo_news(symbol: str, max_items: int = 10) -> list[dict]:

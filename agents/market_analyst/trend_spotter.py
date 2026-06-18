@@ -3,7 +3,8 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from agents.core.data_fetcher import (
-    get_yahoo_trending, get_yahoo_gainers, get_reddit_hot_tickers
+    get_yahoo_trending, get_yahoo_gainers, get_reddit_hot_tickers,
+    get_stocktwits_trending, get_nasdaq_most_active,
 )
 from agents.core import day_cache
 
@@ -60,6 +61,14 @@ def run(log) -> list[str]:
     gainers = set(get_yahoo_gainers())
     log(f"  Yahoo gainers ({len(gainers)}): {sorted(gainers)}")
 
+    log("TrendSpotter: fetching StockTwits trending...")
+    stocktwits = set(get_stocktwits_trending())
+    log(f"  StockTwits ({len(stocktwits)}): {sorted(stocktwits)}")
+
+    log("TrendSpotter: fetching NASDAQ most-active...")
+    nasdaq = set(get_nasdaq_most_active())
+    log(f"  NASDAQ most-active ({len(nasdaq)}): {sorted(nasdaq)}")
+
     log("TrendSpotter: fetching Reddit hot tickers...")
     reddit  = set(get_reddit_hot_tickers())
     log(f"  Reddit mentions ({len(reddit)}): {sorted(reddit)}")
@@ -69,9 +78,11 @@ def run(log) -> list[str]:
     sources: dict[str, set] = {}
 
     for sym, src, pts in (
-        [(s, "Yahoo",   2) for s in yahoo]   +
-        [(s, "Gainers", 3) for s in gainers] +
-        [(s, "Reddit",  1) for s in reddit]
+        [(s, "Yahoo",      2) for s in yahoo]      +
+        [(s, "Gainers",    3) for s in gainers]    +
+        [(s, "StockTwits", 3) for s in stocktwits] +
+        [(s, "NASDAQ",     3) for s in nasdaq]     +
+        [(s, "Reddit",     1) for s in reddit]
     ):
         if sym in NOISE or not _valid_ticker(sym):
             continue
@@ -83,8 +94,8 @@ def run(log) -> list[str]:
     # Tier 1: seen in 2+ sources — highest signal quality
     multi = [s for s in ranked if len(sources[s]) >= 2]
 
-    # Tier 2: curated single-source from Yahoo (Trending or Gainers) — reliable
-    yahoo_single = [
+    # Tier 2: curated single-source (Yahoo / StockTwits / NASDAQ) — reliable
+    curated_single = [
         s for s in ranked
         if len(sources[s]) == 1 and not sources[s].issubset({"Reddit"})
     ]
@@ -97,13 +108,13 @@ def run(log) -> list[str]:
 
     log(
         f"TrendSpotter: scored {len(ranked)} tickers — "
-        f"{len(multi)} multi-source, {len(yahoo_single)} Yahoo-only, "
+        f"{len(multi)} multi-source, {len(curated_single)} curated-single, "
         f"{len(reddit_only)} Reddit-only"
     )
 
-    # Build candidates strictly by tier: multi → Yahoo-curated → Reddit (last resort)
+    # Build candidates strictly by tier: multi → curated-single → Reddit (last resort)
     candidates: list[str] = []
-    for pool in [multi, yahoo_single, reddit_only]:
+    for pool in [multi, curated_single, reddit_only]:
         need = MAX_CANDIDATES - len(candidates)
         if need <= 0:
             break
