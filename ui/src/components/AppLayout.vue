@@ -172,23 +172,33 @@ function logout() {
   .topbar-right { gap: 10px; }
   .logout-btn { padding: 6px 10px; font-size: 0.8rem; }
 
-  .content { padding: 14px 12px; padding-bottom: 76px; }
+  .content { padding: 14px 12px; padding-bottom: 88px; }
 
   .bottom-nav {
     display: flex;
     position: fixed; bottom: 0; left: 0; right: 0;
-    background: #1e3a5f;
-    border-top: 1px solid rgba(255,255,255,0.12);
+    background: rgba(30, 58, 95, 0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.18);
     z-index: 200;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* push items away from rounded screen corners and home indicator */
+    padding-left:   max(env(safe-area-inset-left,  0px), 10px);
+    padding-right:  max(env(safe-area-inset-right, 0px), 10px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
   }
   .bn-item {
     flex: 1; display: flex; flex-direction: column; align-items: center;
-    padding: 8px 4px 6px; color: rgba(255,255,255,0.6);
-    text-decoration: none; min-width: 0;
+    padding: 10px 6px 8px; color: rgba(255,255,255,0.5);
+    text-decoration: none; min-width: 0; border-radius: 12px;
+    transition: color 0.15s;
   }
-  .bn-item.router-link-active { color: #fff; }
-  .bn-icon  { font-size: 1.25rem; line-height: 1; }
-  .bn-label { font-size: 0.6rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; }
+  .bn-item.router-link-active {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+  }
+  .bn-icon  { font-size: 1.3rem; line-height: 1; }
+  .bn-label { font-size: 0.62rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; font-weight: 500; }
 }
 </style>
