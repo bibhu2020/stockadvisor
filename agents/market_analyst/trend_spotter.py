@@ -19,6 +19,16 @@ NOISE = {
     # Financial jargon mistaken for tickers
     "ETF", "IPO", "CEO", "CFO", "CTO", "GDP", "CPI", "FED", "SEC", "NYSE", "AMEX",
     "NASDAQ", "OTC", "ATH", "ATL", "EPS", "PE", "PEG", "ROE", "FCF", "EBIT",
+    # Options / derivatives slang
+    "ATM", "ITM", "OTM", "DTE", "OPEX", "IV", "LEAPS",
+    # Macro / Fed terms
+    "FOMC", "PCE", "PMI", "ISM", "CPI", "RRP", "JOLTS",
+    # Media / network names
+    "CNBC", "MSNB",
+    # Crypto (not stocks)
+    "BTC", "ETH", "NFT", "DOGE", "SHIB",
+    # Corporate / legal jargon
+    "SPAC", "YTD", "ROI", "NAV", "AUM", "NDA", "MOU", "LOI",
     # Technical indicator names
     "MACD", "RSI", "SMA", "EMA", "VWAP", "OBV", "ATR", "ADX", "BB",
     # Reddit/WSB slang
@@ -31,8 +41,8 @@ NOISE = {
 
 
 def _valid_ticker(sym: str) -> bool:
-    """Basic sanity check: 1-5 uppercase letters only."""
-    return sym.isalpha() and 1 <= len(sym) <= 5 and sym.isupper()
+    """Basic sanity check: 2-5 uppercase letters only."""
+    return sym.isalpha() and 2 <= len(sym) <= 5 and sym.isupper()
 
 
 def run(log) -> list[str]:
@@ -44,15 +54,15 @@ def run(log) -> list[str]:
 
     log("TrendSpotter: fetching Yahoo Finance trending...")
     yahoo   = set(get_yahoo_trending())
-    log(f"  Yahoo ({len(yahoo)}): {sorted(yahoo)}")
+    log(f"  Yahoo trending ({len(yahoo)}): {sorted(yahoo)}")
 
     log("TrendSpotter: fetching Yahoo Finance gainers/most-active...")
     gainers = set(get_yahoo_gainers())
-    log(f"  Gainers ({len(gainers)}): {sorted(gainers)}")
+    log(f"  Yahoo gainers ({len(gainers)}): {sorted(gainers)}")
 
     log("TrendSpotter: fetching Reddit hot tickers...")
     reddit  = set(get_reddit_hot_tickers())
-    log(f"  Reddit ({len(reddit)}): {sorted(reddit)}")
+    log(f"  Reddit mentions ({len(reddit)}): {sorted(reddit)}")
 
     # Score by source weight; track which sources each ticker appears in
     score:   dict[str, int] = {}
@@ -70,23 +80,46 @@ def run(log) -> list[str]:
 
     ranked = sorted(score, key=lambda x: (-len(sources[x]), -score[x]))
 
-    # Prefer tickers seen in 2+ sources; fill remainder with best single-source
-    multi  = [s for s in ranked if len(sources[s]) >= 2]
-    single = [s for s in ranked if len(sources[s]) == 1]
+    # Tier 1: seen in 2+ sources — highest signal quality
+    multi = [s for s in ranked if len(sources[s]) >= 2]
 
-    if len(multi) >= MIN_CANDIDATES:
-        candidates = multi[:MAX_CANDIDATES]
-    else:
-        candidates = multi + single[: max(0, MIN_CANDIDATES - len(multi))]
-        candidates = candidates[:MAX_CANDIDATES]
+    # Tier 2: curated single-source from Yahoo (Trending or Gainers) — reliable
+    yahoo_single = [
+        s for s in ranked
+        if len(sources[s]) == 1 and not sources[s].issubset({"Reddit"})
+    ]
+
+    # Tier 3: Reddit-only — noisy, last resort
+    reddit_only = [
+        s for s in ranked
+        if len(sources[s]) == 1 and sources[s] == {"Reddit"}
+    ]
+
+    log(
+        f"TrendSpotter: scored {len(ranked)} tickers — "
+        f"{len(multi)} multi-source, {len(yahoo_single)} Yahoo-only, "
+        f"{len(reddit_only)} Reddit-only"
+    )
+
+    # Build candidates strictly by tier: multi → Yahoo-curated → Reddit (last resort)
+    candidates: list[str] = []
+    for pool in [multi, yahoo_single, reddit_only]:
+        need = MAX_CANDIDATES - len(candidates)
+        if need <= 0:
+            break
+        candidates.extend(pool[:need])
 
     def _src_label(sym: str) -> str:
         return "+".join(sorted(sources.get(sym, {"?"})))
 
     detail = [f"{s}({_src_label(s)})" for s in candidates]
-    log(
-        f"TrendSpotter: {len(multi)} multi-source, {len(single)} single-source. "
-        f"Selected {len(candidates)}: {detail}"
-    )
+    log(f"TrendSpotter: selected {len(candidates)}: {detail}")
+
+    if len(candidates) < MIN_CANDIDATES:
+        log(
+            f"TrendSpotter: WARNING — only {len(candidates)} candidates found "
+            f"(min {MIN_CANDIDATES}). Sources may be returning limited data today."
+        )
+
     day_cache.put(CACHE_KEY, candidates)
     return candidates
