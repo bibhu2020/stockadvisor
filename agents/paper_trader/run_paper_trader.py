@@ -1,6 +1,7 @@
 """Entry point for the Paper Trader agent pipeline."""
 import os
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -12,11 +13,48 @@ from agents.core.market_hours import check_or_exit
 check_or_exit("Paper Trader")
 
 from agents.core.db import (
-    AnalystReport, Position, init_db, get_setting, get_active_strategy, SessionLocal
+    AgentRun, AnalystReport, PortfolioSnapshot, Position,
+    Transaction, init_db, get_setting, get_active_strategy, SessionLocal
 )
 from agents.core.orchestrator import AgentOrchestrator
 from agents.paper_trader import position_monitor, trade_decision, trade_executor
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, update, delete
+
+
+_AGENT_RUN_RETENTION_DAYS = 7
+
+
+def _purge_old_agent_runs(session, log) -> None:
+    """Delete agent_run rows older than retention window and null their FKs first."""
+    cutoff = datetime.utcnow() - timedelta(days=_AGENT_RUN_RETENTION_DAYS)
+
+    old_ids = session.execute(
+        select(AgentRun.id).where(AgentRun.started_at < cutoff)
+    ).scalars().all()
+
+    if not old_ids:
+        log(f"Agent run cleanup: no runs older than {_AGENT_RUN_RETENTION_DAYS} days.")
+        return
+
+    # Null FK references in child tables before deleting
+    session.execute(
+        update(AnalystReport)
+        .where(AnalystReport.agent_run_id.in_(old_ids))
+        .values(agent_run_id=None)
+    )
+    session.execute(
+        update(Transaction)
+        .where(Transaction.agent_run_id.in_(old_ids))
+        .values(agent_run_id=None)
+    )
+    session.execute(
+        update(PortfolioSnapshot)
+        .where(PortfolioSnapshot.agent_run_id.in_(old_ids))
+        .values(agent_run_id=None)
+    )
+
+    session.execute(delete(AgentRun).where(AgentRun.id.in_(old_ids)))
+    log(f"Agent run cleanup: deleted {len(old_ids)} run(s) older than {_AGENT_RUN_RETENTION_DAYS} days.")
 
 
 def main(triggered_by: str = "scheduler"):
@@ -83,6 +121,11 @@ def main(triggered_by: str = "scheduler"):
         # 3. Portfolio snapshot
         orch.log("--- Portfolio Snapshot ---")
         trade_executor.snapshot_portfolio(session, orch.run_id, orch.log)
+        session.commit()
+
+        # 4. Housekeeping — purge agent runs older than 7 days
+        orch.log("--- Housekeeping ---")
+        _purge_old_agent_runs(session, orch.log)
         session.commit()
 
 
