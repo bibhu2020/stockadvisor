@@ -5,9 +5,9 @@ on:
     # 3 daily runs at CST (UTC-6) target times, Mon-Fri.
     # All three are within NYSE market hours in both CST and CDT seasons.
     # market_hours.py gates all runs against NYSE hours (9:30 AM–4:00 PM ET).
-    - cron: '30 15 * * 1-5'   # 09:30 AM CST / 10:30 AM CDT
-    - cron: '30 17 * * 1-5'   # 11:30 AM CST / 12:30 PM CDT
-    - cron: '0  20 * * 1-5'   # 02:00 PM CST / 03:00 PM CDT
+    - cron: '30 14 * * 1-5'   # 08:30 AM CST / 09:30 AM CDT
+    - cron: '0  17 * * 1-5'   # 11:00 AM CST / 12:00 PM CDT
+    - cron: '45 19 * * 1-5'   # 01:45 PM CST / 02:45 PM CDT
   workflow_dispatch:
     inputs:
       force:
