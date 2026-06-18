@@ -2,8 +2,8 @@ name: Market Analyst — Daily Stock Research
 
 on:
   schedule:
-    # 9:30 AM CST (UTC-6) = 15:30 UTC, Mon-Fri
-    - cron: '30 15 * * 1-5'
+    # 9:00 AM CST (UTC-6) = 15:00 UTC, Mon-Fri
+    - cron: '0 15 * * 1-5'
   workflow_dispatch:
     inputs:
       force:
