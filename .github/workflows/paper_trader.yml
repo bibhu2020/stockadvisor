@@ -2,18 +2,16 @@ name: Paper Trader — Intraday Trade Execution
 
 on:
   schedule:
-    # Every 30 minutes during NYSE market hours, Mon-Fri
-    # NYSE: 9:30 AM–4:00 PM ET | EDT (summer) = UTC-4 | EST (winter) = UTC-5
-    # Window 13:30–21:00 UTC covers both seasons; market_hours.py gates actual execution
-    - cron: '30 13 * * 1-5'
-    - cron: '0,30 14 * * 1-5'
-    - cron: '0,30 15 * * 1-5'
-    - cron: '0,30 16 * * 1-5'
-    - cron: '0,30 17 * * 1-5'
-    - cron: '0,30 18 * * 1-5'
-    - cron: '0,30 19 * * 1-5'
-    - cron: '0,30 20 * * 1-5'
-    - cron: '0 21 * * 1-5'
+    # 3 daily runs at CST (UTC-6) target times, Mon-Fri.
+    # In CDT/summer (UTC-5) these fire 1 hour later in local time:
+    #   09:30 CST → 10:30 CDT (still within market hours ✓)
+    #   12:30 CST → 01:30 CDT (still within market hours ✓)
+    #   02:45 CST → 03:45 CDT → 20:45 UTC fires at 4:45 PM EDT (after NYSE close;
+    #               market_hours.py blocks execution — effectively 2 runs in summer)
+    # market_hours.py gates all runs against NYSE hours (9:30 AM–4:00 PM ET).
+    - cron: '30 15 * * 1-5'   # 09:30 AM CST / 10:30 AM CDT
+    - cron: '30 18 * * 1-5'   # 12:30 PM CST / 01:30 PM CDT
+    - cron: '45 20 * * 1-5'   # 02:45 PM CST / blocked after close in CDT
   workflow_dispatch:
     inputs:
       force:
