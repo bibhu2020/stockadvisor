@@ -188,6 +188,7 @@ def init_db():
     with SessionLocal() as session:
         _seed_settings(session)
         _seed_strategy(session)
+        _backfill_strategy_prompts(session)
         session.commit()
 
 
@@ -204,6 +205,21 @@ def _seed_settings(session: Session):
             session.add(Setting(key=key, value=value))
 
 
+def _default_prompts() -> dict:
+    from agents.market_analyst.fundamental_analyst import SYSTEM_PROMPT as FP
+    from agents.market_analyst.technical_analyst   import SYSTEM_PROMPT as TP
+    from agents.market_analyst.sentiment_analyst   import SYSTEM_PROMPT as SP
+    from agents.market_analyst.synthesizer         import SYSTEM_PROMPT as SYP
+    from agents.paper_trader.trade_decision        import SYSTEM_PROMPT as TDP
+    return {
+        "fundamental_analyst": FP,
+        "technical_analyst":   TP,
+        "sentiment_analyst":   SP,
+        "synthesizer":         SYP,
+        "trade_decision":      TDP,
+    }
+
+
 def _seed_strategy(session: Session):
     from sqlalchemy import select
     existing = session.execute(select(Strategy)).first()
@@ -218,7 +234,7 @@ def _seed_strategy(session: Session):
         "preferred_sectors": [],
         "avoid_earnings_within_days": 5,
         "entry_timing_rules": "Buy at open or within 1% of analyst entry price. Prefer morning entries before 11 AM.",
-        "prompts": {},  # populated by retrospective agent; empty = use hardcoded defaults
+        "prompts": _default_prompts(),
     }
     strategy = Strategy(
         version=1,
@@ -235,6 +251,21 @@ def _seed_strategy(session: Session):
         source="initial",
     )
     session.add(strategy)
+
+
+def _backfill_strategy_prompts(session: Session):
+    """Populate prompts:{} on any existing strategy that has no stored prompts."""
+    from sqlalchemy import select
+    strategies = session.execute(select(Strategy)).scalars().all()
+    updated = 0
+    for s in strategies:
+        params = s.get_parameters()
+        if not params.get("prompts"):
+            params["prompts"] = _default_prompts()
+            s.set_parameters(params)
+            updated += 1
+    if updated:
+        print(f"[db] Backfilled prompts on {updated} strategy row(s).")
 
 
 def get_setting(session: Session, key: str, default=None):
