@@ -2,7 +2,7 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from agents.core.data_fetcher import get_current_price
 from agents.core.db import Position, SessionLocal
 from sqlalchemy import select
@@ -25,16 +25,13 @@ def run(session, stop_loss_pct: float, profit_target_pct: float, log) -> list[di
             f"stop={pos.stop_loss_price:.2f} target={pos.exit_target_price:.2f}")
 
         reason = None
-        # Stop loss: analyst stop OR 15% rule, whichever triggers first
         pct_change = (current - pos.entry_price) / pos.entry_price * 100
+        # Stop loss: analyst stop OR strategy pct, whichever triggers first
         if current <= pos.stop_loss_price or pct_change <= -stop_loss_pct:
             reason = "stop_loss"
-        # Profit target: analyst exit OR 10% rule
+        # Profit target: analyst exit OR strategy pct, whichever triggers first
         elif current >= pos.exit_target_price or pct_change >= profit_target_pct:
             reason = "profit_target"
-        # Month horizon expired
-        elif datetime.utcnow() - pos.opened_at > timedelta(days=30):
-            reason = "expired"
 
         if reason:
             sell_orders.append({
