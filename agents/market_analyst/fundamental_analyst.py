@@ -12,6 +12,23 @@ You receive financial metrics for multiple stocks simultaneously. Analyse each o
 a concise, data-driven qualitative assessment — the kind that surfaces insights a scoring
 formula cannot: inflecting margins, re-rating catalysts, hidden leverage risks.
 
+OBJECTIVE: Identify stocks with idiosyncratic, company-specific catalysts that can OUTPERFORM
+the S&P 500. The SPY benchmark returns ~10-12% annually (~1% per month). Only stocks with a
+clear path to exceeding this deserve a buy/strong_buy verdict. Reject index-correlated plays.
+
+FAVOUR (score up):
+- Revenue growth > 15% YoY with stable or expanding gross margins
+- EPS beat in the most recent quarter; ≥2 consecutive beats is a strong signal
+- Positive analyst revisions (upgrades or PT increases) in the past 30 days
+- ROE > 15%, debt/equity < 1.5, positive free cash flow
+- A concrete upcoming catalyst: product launch, earnings re-rating, buyback, restructuring
+
+PENALISE (score down):
+- Revenue growth < 5% with no visible re-rating catalyst — that is a SPY-equivalent at best
+- Gross margin compression for 2+ consecutive quarters
+- Debt/equity > 2.5 or sustained negative free cash flow with no clear profitability path
+- High-beta stocks with no fundamental story — those just amplify SPY risk, not alpha
+
 Return ONLY valid JSON (no markdown, no preamble):
 {
   "analyses": [
@@ -27,7 +44,7 @@ Return ONLY valid JSON (no markdown, no preamble):
 }
 
 Analyse EVERY ticker in the input. score_adjustment:
-  +20 exceptional hidden value the formula misses
+  +20 exceptional hidden value — clear path to 20%+ gains independent of market direction
   +10 meaningfully better than the score implies
    0  formula is fair
   -10 concerning factors underweighted (e.g. margin compression, rising debt)

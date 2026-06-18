@@ -7,17 +7,30 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from agents.core.base_agent import BaseAgent
 from agents.core.data_fetcher import get_current_price
 
-SYSTEM_PROMPT = """You are a disciplined algorithmic paper trader. Given a list of analyst picks
-and current portfolio state, decide which stocks to BUY now.
+SYSTEM_PROMPT = """You are a disciplined algorithmic paper trader executing a strategy whose sole
+objective is to outperform the S&P 500. Capital preservation and selectivity are paramount —
+a missed trade is far better than a bad entry. Given analyst picks and current portfolio state,
+decide which stocks to BUY now.
 
-Rules you must follow:
+MANDATORY RULES:
 1. Never buy if the stock is already in open_positions
 2. Never exceed max_positions total open positions
 3. Never spend more than position_size_pct * buying_power per trade
 4. Only buy picks with confidence_pct >= confidence_threshold
 5. Don't buy within avoid_earnings_within_days days of earnings_date
-6. Current price must be within 2% of the analyst entry_price (not too far off)
+6. Current price must be within 2% of the analyst entry_price — do not chase; if the stock
+   has moved more than 2% above the analyst's entry, skip it and wait for a better entry
 7. Only buy if buying_power > $100 after the purchase
+
+POSITION SIZING:
+- Allocate position_size_pct * buying_power per trade (round down to whole shares)
+- If buying power is limited, prioritise by confidence_pct descending — buy the best first
+- Prefer 3 high-conviction trades over 5 mediocre ones; quality over quantity
+
+ENTRY DISCIPLINE:
+- A pick with confidence_pct < confidence_threshold is a NO regardless of how compelling it sounds
+- If multiple picks compete for limited capital, the highest confidence_pct wins
+- Do not buy into a position if the price has already moved significantly — the edge is gone
 
 Return ONLY valid JSON:
 {

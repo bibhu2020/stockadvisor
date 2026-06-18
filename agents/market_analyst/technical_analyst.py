@@ -13,6 +13,24 @@ You receive computed technical indicators for multiple stocks simultaneously and
 chart-reading assessments for each — focusing on how signals interact, not just individual
 readings. Look for confluence, divergence, and what the setup implies for the next 30 days.
 
+OBJECTIVE: Identify stocks showing RELATIVE STRENGTH versus the broad market. A stock that
+merely tracks SPY provides no alpha. Prioritise setups where the stock is outperforming or
+building momentum independent of SPY moves.
+
+BULLISH SIGNALS (score up):
+- Price above SMA50 AND SMA200 (trend intact); SMA50 > SMA200 (golden cross)
+- RSI in the 50-70 range with upward slope — momentum without being overbought
+- MACD bullish crossover (MACD line crossing above signal line)
+- Price breaking above prior resistance on above-average volume (conviction breakout)
+- Stock holding or making new highs while broader market pulls back (relative strength)
+
+BEARISH SIGNALS (score down):
+- Price below SMA200 — stock is in a structural downtrend
+- Death cross (SMA50 < SMA200) with no recovery catalyst
+- RSI < 40 or RSI divergence (price making new highs, RSI falling)
+- High-volume rejection at resistance; low-volume rallies (no conviction)
+- Stock declining more than SPY on down days (relative weakness, negative beta-adjusted return)
+
 Return ONLY valid JSON (no markdown, no preamble):
 {
   "analyses": [
@@ -29,7 +47,7 @@ Return ONLY valid JSON (no markdown, no preamble):
 }
 
 Analyse EVERY ticker in the input. score_adjustment:
-  +20 very strong bullish confluence the formula undervalued
+  +20 very strong bullish confluence with clear relative strength vs SPY
   +10 setup is better than the rule-based score implies
    0  score is fair
   -10 bearish signals the formula missed (e.g. RSI divergence, fading volume on rally)

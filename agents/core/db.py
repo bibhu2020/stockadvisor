@@ -238,13 +238,15 @@ def _seed_strategy(session: Session):
     }
     strategy = Strategy(
         version=1,
-        name="Balanced Momentum v1",
+        name="SPY Outperformance v1",
         description=(
-            "Balanced momentum strategy. Focus on high-volume stocks with strong technicals "
-            "(RSI 40-65 range with upward momentum). Prefer sectors with positive earnings "
-            "revisions. Avoid buying within 5 days of earnings to reduce gap risk. "
-            "Max 5 concurrent positions. Allocate 20% of buying power per position. "
-            "Prioritize stocks with high analyst confidence and improving sentiment."
+            "Initial strategy targeting returns above the S&P 500 benchmark (~1% per month). "
+            "Selects stocks with idiosyncratic, company-specific catalysts — earnings beats, "
+            "analyst upgrades, product launches — that can move independently of broad market "
+            "direction. Requires RSI 50-70 with SMA50 above SMA200 (trend intact), revenue "
+            "growth > 15% YoY, and minimum 70% analyst confidence. Max 5 concurrent positions "
+            "at 20% of buying power each. Avoids earnings within 5 days to limit binary risk. "
+            "The retrospective agent automatically evolves this strategy when returns lag SPY."
         ),
         parameters=json.dumps(seed_params),
         is_active=True,
@@ -254,18 +256,37 @@ def _seed_strategy(session: Session):
 
 
 def _backfill_strategy_prompts(session: Session):
-    """Populate prompts:{} on any existing strategy that has no stored prompts."""
+    """Ensure every strategy has all 5 agent prompts stored.
+
+    - 'initial' strategies: always sync to current defaults (prompts are code-defined,
+      not hand-tuned, so it's safe to refresh them when the code changes).
+    - 'retrospective' strategies: only ADD missing keys; never overwrite tuned prompts.
+    """
     from sqlalchemy import select
+    defaults = _default_prompts()
     strategies = session.execute(select(Strategy)).scalars().all()
     updated = 0
     for s in strategies:
         params = s.get_parameters()
-        if not params.get("prompts"):
-            params["prompts"] = _default_prompts()
+        prompts = params.get("prompts") or {}
+        changed = False
+        for key, default_text in defaults.items():
+            if s.source == "initial":
+                # Always keep initial strategies in sync with current code defaults
+                if prompts.get(key) != default_text:
+                    prompts[key] = default_text
+                    changed = True
+            else:
+                # Retrospective strategies: only fill in completely missing keys
+                if not prompts.get(key):
+                    prompts[key] = default_text
+                    changed = True
+        if changed:
+            params["prompts"] = prompts
             s.set_parameters(params)
             updated += 1
     if updated:
-        print(f"[db] Backfilled prompts on {updated} strategy row(s).")
+        print(f"[db] Synced prompts on {updated} strategy row(s).")
 
 
 def get_setting(session: Session, key: str, default=None):
