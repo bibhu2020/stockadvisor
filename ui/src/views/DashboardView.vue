@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { BarChart, LineChart, PieChart, GaugeChart } from 'echarts/charts'
@@ -88,6 +89,15 @@ function statusColor(s: string) {
 <template>
   <div>
     <h2 class="page-h">Executive Dashboard</h2>
+
+    <!-- How It Works banner -->
+    <RouterLink to="/how-it-works" class="hiw-banner">
+      <span class="hiw-icon">💡</span>
+      <span class="hiw-text">
+        <strong>New here?</strong> Learn how AlphaForge's AI agents research stocks, trade on your behalf, and continuously improve the strategy.
+      </span>
+      <span class="hiw-cta">How It Works →</span>
+    </RouterLink>
 
     <!-- KPI Cards -->
     <div class="kpi-row">
@@ -208,6 +218,19 @@ function statusColor(s: string) {
 .red { color: #e74c3c; font-weight: 600; }
 .empty { color: #9ca3af; font-size: 0.875rem; padding: 16px 0; }
 
+.hiw-banner {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 1px solid #bfdbfe; border-radius: 12px;
+  padding: 14px 18px; margin-bottom: 20px;
+  text-decoration: none; color: inherit; transition: box-shadow 0.15s;
+}
+.hiw-banner:hover { box-shadow: 0 4px 12px rgba(59,130,246,0.18); }
+.hiw-icon { font-size: 1.5rem; flex-shrink: 0; }
+.hiw-text { flex: 1; font-size: 0.875rem; color: #374151; line-height: 1.5; }
+.hiw-text strong { color: #1d4ed8; }
+.hiw-cta { font-size: 0.82rem; font-weight: 700; color: #1d4ed8; white-space: nowrap; }
+
 @media (max-width: 767px) {
   .page-h { font-size: 1.2rem; margin-bottom: 14px; }
   .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -216,5 +239,7 @@ function statusColor(s: string) {
   .chart-row { grid-template-columns: 1fr; gap: 12px; }
   .section-card { padding: 14px; }
   .agent-card { min-width: 0; flex: 1 1 140px; }
+  .hiw-banner { flex-wrap: wrap; gap: 10px; }
+  .hiw-cta { width: 100%; text-align: right; }
 }
 </style>
