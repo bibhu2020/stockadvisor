@@ -158,6 +158,10 @@ def run(
             "roe": f.get("roe"),
             "debt_to_equity": f.get("debt_to_equity"),
             "fundamental_score": f.get("fundamental_score", 0),
+            "fundamental_summary": f.get("fundamental_summary", ""),
+            "fundamental_strengths": f.get("fundamental_strengths", []),
+            "fundamental_risks": f.get("fundamental_risks", []),
+            "fundamental_verdict": f.get("fundamental_verdict", ""),
 
             # Analyst consensus
             "analyst_target_mean": a_tgt,
@@ -183,6 +187,10 @@ def run(
             "bb_lower": t.get("bb_lower"),
             "technical_signals": t.get("signals", []),
             "technical_score": t.get("technical_score", 0),
+            "technical_summary": t.get("technical_summary", ""),
+            "technical_setup": t.get("technical_setup", ""),
+            "support_level": t.get("support_level"),
+            "resistance_level": t.get("resistance_level"),
 
             # Sentiment & catalysts
             "sentiment_score": s.get("sentiment_score", 0),
