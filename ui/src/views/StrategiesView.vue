@@ -94,20 +94,15 @@ function togglePrompt(key: string) {
             <p class="desc-text">{{ s.description }}</p>
           </div>
 
-          <!-- Numeric Parameters -->
+          <!-- Parameters as formatted JSON -->
           <div class="section">
             <h4 class="section-title">Parameters <span class="readonly-tag">read-only</span></h4>
-            <div class="param-grid">
-              <div v-for="(val, key) in numericParams(s)" :key="key" class="param-item">
-                <span class="param-key">{{ key }}</span>
-                <span class="param-val">{{ formatValue(val) }}</span>
-              </div>
-            </div>
+            <pre class="json-body">{{ JSON.stringify(numericParams(s), null, 2) }}</pre>
           </div>
 
-          <!-- Agent Prompts -->
-          <div class="section">
-            <h4 class="section-title">Agent Prompts <span class="readonly-tag">read-only · tuned by retrospective agent</span></h4>
+          <!-- Agent Prompts — full-width, edge-to-edge -->
+          <div class="section prompts-section">
+            <h4 class="section-title px">Agent Prompts <span class="readonly-tag">read-only · tuned by retrospective agent</span></h4>
             <div class="prompts-list">
               <div
                 v-for="(text, key) in prompts(s)" :key="key"
@@ -166,6 +161,10 @@ function togglePrompt(key: string) {
 .strategy-body { padding: 0 20px 20px; border-top: 1px solid #f3f4f6; }
 
 .section { margin-top: 20px; }
+/* prompts-section breaks out of the body's side padding to go edge-to-edge */
+.prompts-section { margin-left: -20px; margin-right: -20px; margin-bottom: -20px; margin-top: 20px; }
+.px { padding-left: 20px; padding-right: 20px; }
+
 .section-title {
   font-size: 0.82rem; font-weight: 700; color: #374151;
   margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
@@ -176,20 +175,28 @@ function togglePrompt(key: string) {
 }
 .desc-text { font-size: 0.875rem; color: #6b7280; line-height: 1.6; }
 
-.param-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
-.param-item { background: #f9fafb; border-radius: 8px; padding: 10px; }
-.param-key { display: block; font-size: 0.75rem; color: #9ca3af; font-weight: 600; margin-bottom: 4px; }
-.param-val { font-size: 0.875rem; color: #1e3a5f; font-weight: 600; }
+/* Formatted JSON block for parameters */
+.json-body {
+  margin: 0;
+  padding: 14px 16px;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  white-space: pre;
+  overflow-x: auto;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
 
 /* Prompts */
-.prompts-list { display: flex; flex-direction: column; gap: 8px; }
+.prompts-list { display: flex; flex-direction: column; gap: 0; border-top: 1px solid #e5e7eb; }
 
-.prompt-block {
-  border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;
-}
+.prompt-block { border-bottom: 1px solid #e5e7eb; }
 .prompt-header {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; cursor: pointer; background: #f9fafb;
+  padding: 10px 20px; cursor: pointer; background: #f9fafb;
   user-select: none;
 }
 .prompt-header:hover { background: #f3f4f6; }
@@ -199,12 +206,12 @@ function togglePrompt(key: string) {
 
 .prompt-body {
   margin: 0;
-  padding: 14px 16px;
+  padding: 16px 20px;
   background: #1e293b;
   color: #e2e8f0;
   font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
   font-size: 0.78rem;
-  line-height: 1.6;
+  line-height: 1.65;
   white-space: pre-wrap;
   word-break: break-word;
   width: 100%;
@@ -218,7 +225,11 @@ function togglePrompt(key: string) {
   .page-h { font-size: 1.2rem; margin-bottom: 10px; }
   .strategy-header { padding: 12px 14px; }
   .strategy-body { padding: 0 14px 14px; }
+  .prompts-section { margin-left: -14px; margin-right: -14px; margin-bottom: -14px; }
+  .px { padding-left: 14px; padding-right: 14px; }
   .header-right { gap: 10px; }
-  .prompt-body { font-size: 0.72rem; padding: 10px 12px; }
+  .prompt-body { font-size: 0.72rem; padding: 12px 14px; }
+  .prompt-header { padding: 10px 14px; }
+  .json-body { font-size: 0.72rem; }
 }
 </style>
