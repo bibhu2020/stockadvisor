@@ -87,6 +87,42 @@ def _score(info: dict) -> float:
     if a_upg and a_upg >= 5:
         score += 5
 
+    # Market cap: prefer large/mid cap for liquidity and analyst coverage
+    market_cap = info.get("market_cap")
+    if market_cap:
+        if market_cap >= 10_000_000_000:   # Large/mega cap ≥ $10B
+            score += 5
+        elif market_cap >= 2_000_000_000:  # Mid cap $2B–$10B
+            score += 2
+        elif market_cap < 300_000_000:     # Micro cap < $300M — too illiquid
+            score -= 10
+        else:                               # Small cap $300M–$2B
+            score -= 3
+
+    # YTD momentum
+    ytd = info.get("ytd_return_pct")
+    if ytd is not None:
+        if ytd > 30:
+            score += 8
+        elif ytd > 15:
+            score += 5
+        elif ytd > 0:
+            score += 2
+        elif ytd < -30:
+            score -= 10
+        elif ytd < -15:
+            score -= 5
+
+    # Distance from 52-week high: near high = strong momentum
+    pct_from_high = info.get("pct_from_52w_high")
+    if pct_from_high is not None:
+        if pct_from_high >= -5:    # Within 5% of 52w high — breakout zone
+            score += 5
+        elif pct_from_high >= -15: # Within 15% — strong uptrend
+            score += 3
+        elif pct_from_high < -40:  # >40% below high — significant downtrend
+            score -= 5
+
     return max(0.0, min(100.0, score))
 
 
@@ -127,8 +163,22 @@ def run(candidates: list[str], log) -> list[dict]:
             time.sleep(0.5)
             continue
 
-        log(f"FundamentalAnalyst: {sym} — price ${info['current_price']}")
+        # Compute 52-week proximity metrics
+        price    = info.get("current_price")
+        high_52w = info.get("fifty_two_week_high")
+        low_52w  = info.get("fifty_two_week_low")
+        if price and high_52w and high_52w > 0:
+            info["pct_from_52w_high"] = round((price - high_52w) / high_52w * 100, 1)
+        if price and low_52w and low_52w > 0:
+            info["pct_from_52w_low"] = round((price - low_52w) / low_52w * 100, 1)
+
         info["fundamental_score"] = round(_score(info), 1)
+
+        mc = info.get("market_cap")
+        mc_str = f"${mc/1e9:.1f}B" if mc and mc >= 1e9 else (f"${mc/1e6:.0f}M" if mc else "N/A")
+        ytd_str = f"{info['ytd_return_pct']:+.1f}% YTD" if info.get("ytd_return_pct") is not None else "YTD N/A"
+        h_str   = f"{info['pct_from_52w_high']:+.1f}% from 52w high" if info.get("pct_from_52w_high") is not None else ""
+        log(f"FundamentalAnalyst: {sym} — ${info['current_price']} | {mc_str} | {ytd_str} | {h_str} | score {info['fundamental_score']}")
         day_cache.put(key, info)
         results.append(info)
         time.sleep(0.5)
