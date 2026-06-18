@@ -11,6 +11,7 @@ const router = createRouter({
     { path: '/reports',  name: 'reports',  component: () => import('../views/ReportsView.vue'),   meta: { title: 'Reports' } },
     { path: '/strategies',name: 'strategies',component: () => import('../views/StrategiesView.vue'), meta: { title: 'Strategies' } },
     { path: '/admin',    name: 'admin',    component: () => import('../views/AdminView.vue'),     meta: { admin: true, title: 'Admin' } },
+    { path: '/how-it-works', name: 'how-it-works', component: () => import('../views/HowItWorksView.vue'), meta: { title: 'How It Works' } },
     { path: '/profile',  name: 'profile',  component: () => import('../views/ProfileView.vue'),   meta: { title: 'Profile' } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
