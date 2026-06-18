@@ -11,12 +11,14 @@ from agents.market_analyst.fundamental_analyst import SYSTEM_PROMPT as DEFAULT_F
 from agents.market_analyst.technical_analyst   import SYSTEM_PROMPT as DEFAULT_TECHNICAL_PROMPT
 from agents.market_analyst.sentiment_analyst   import SYSTEM_PROMPT as DEFAULT_SENTIMENT_PROMPT
 from agents.market_analyst.synthesizer         import SYSTEM_PROMPT as DEFAULT_SYNTHESIZER_PROMPT
+from agents.paper_trader.trade_decision        import SYSTEM_PROMPT as DEFAULT_TRADE_DECISION_PROMPT
 
 DEFAULT_PROMPTS = {
     "fundamental_analyst": DEFAULT_FUNDAMENTAL_PROMPT,
     "technical_analyst":   DEFAULT_TECHNICAL_PROMPT,
     "sentiment_analyst":   DEFAULT_SENTIMENT_PROMPT,
     "synthesizer":         DEFAULT_SYNTHESIZER_PROMPT,
+    "trade_decision":      DEFAULT_TRADE_DECISION_PROMPT,
 }
 
 # Safety limits for prompt tuning
@@ -26,23 +28,25 @@ _MAX_GROWTH_RATIO              = 1.6   # reject if new prompt > 60% longer than 
 
 SYSTEM_PROMPT = """You are a senior quantitative strategist and AI systems engineer at a top
 hedge fund. A trading strategy underperformed SPY. You must evolve BOTH the numeric trading
-parameters AND the analyst prompt instructions that guide how the AI picks stocks.
+parameters AND the prompt instructions that guide how the AI picks and buys stocks.
 
-The "prompts" block contains the current instructions given to each AI analyst:
+The "prompts" block contains the current instructions given to each AI agent:
   - fundamental_analyst: how to assess company financials
   - technical_analyst:   how to read chart setups
   - sentiment_analyst:   how to interpret news and social signals
   - synthesizer:         how to select and rank final picks
+  - trade_decision:      how the paper trader decides which analyst picks to BUY and at what
+                         quantity — including entry timing, confidence filters, and position sizing
 
 PROMPT TUNING RULES (read carefully):
 1. Make TARGETED, SURGICAL edits — do not rewrite prompts from scratch
 2. Identify WHICH agent's prompt contributed to the failures in the pattern analysis
 3. Add specific rules that address the observed failures (e.g. "Penalise stocks with RSI > 75
-   unless MACD crossed bullish in the same week")
+   unless MACD crossed bullish in the same week", or "Skip buys if price deviation > 1%")
 4. If a prompt is working well, return null — no change
 5. Keep additions concise; do not make any prompt more than 50% longer than it currently is
 6. Preserve the existing JSON output schema instructions in each prompt — do not alter the
-   expected output format, only the analysis guidance
+   expected output format, only the analysis/decision guidance
 
 NUMERIC PARAMETER RULES:
 - stop_loss_pct:            5–20 float
@@ -69,7 +73,8 @@ Return ONLY valid JSON (no markdown, no preamble):
       "fundamental_analyst": "<updated prompt text, or null to keep current>",
       "technical_analyst":   "<updated prompt text, or null to keep current>",
       "sentiment_analyst":   "<updated prompt text, or null to keep current>",
-      "synthesizer":         "<updated prompt text, or null to keep current>"
+      "synthesizer":         "<updated prompt text, or null to keep current>",
+      "trade_decision":      "<updated prompt text, or null to keep current>"
     }
   },
   "rationale": "<2-3 sentences on numeric parameter changes>",
@@ -77,7 +82,8 @@ Return ONLY valid JSON (no markdown, no preamble):
     "fundamental_analyst": "<what changed and why, or null if unchanged>",
     "technical_analyst":   "<what changed and why, or null if unchanged>",
     "sentiment_analyst":   "<what changed and why, or null if unchanged>",
-    "synthesizer":         "<what changed and why, or null if unchanged>"
+    "synthesizer":         "<what changed and why, or null if unchanged>",
+    "trade_decision":      "<what changed and why, or null if unchanged>"
   }
 }"""
 

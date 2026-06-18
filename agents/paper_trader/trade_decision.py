@@ -34,6 +34,10 @@ Return ONLY valid JSON:
 If no buys are warranted, return {"buy_orders": [], "reasoning": "..."}"""
 
 
+def get_prompt(strategy_params: dict) -> str:
+    return strategy_params.get("prompts", {}).get("trade_decision") or SYSTEM_PROMPT
+
+
 def run(last_report, open_symbols: list[str], buying_power: float,
         strategy_params: dict, log) -> list[dict]:
     """Decide BUY orders from analyst picks not yet in portfolio."""
@@ -76,7 +80,7 @@ def run(last_report, open_symbols: list[str], buying_power: float,
         "candidates": candidates,
     }
 
-    agent = BaseAgent(role="TradeDecision", system_prompt=SYSTEM_PROMPT)
+    agent = BaseAgent(role="TradeDecision", system_prompt=get_prompt(params))
     log("TradeDecision: generating trade decisions...")
     result = agent.run("Decide which stocks to buy from the candidates.", context=context)
     buy_orders = result.get("buy_orders", [])
