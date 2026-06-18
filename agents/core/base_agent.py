@@ -1,6 +1,7 @@
 """Base agent: Claude Sonnet 4.6 → GPT-4o → Gemini fallback chain."""
 import json
 import os
+import re
 from typing import Any, Callable
 
 import anthropic
@@ -130,7 +131,7 @@ class BaseAgent:
         for _ in range(self.max_tool_rounds):
             kwargs: dict = {
                 "model": ANTHROPIC_MODEL,
-                "max_tokens": 4096,
+                "max_tokens": 16384,
                 "system": self.system_prompt,
                 "messages": messages,
             }
@@ -161,6 +162,11 @@ class BaseAgent:
                     })
                 messages.append({"role": "user", "content": tool_results})
             else:
+                if response.stop_reason == "max_tokens":
+                    print(
+                        f"[base_agent] WARNING: [{self.role}] Anthropic response truncated "
+                        f"(stop_reason=max_tokens). JSON will likely be incomplete."
+                    )
                 # Final text response
                 text = text_blocks[0].text if text_blocks else ""
                 return self._parse_json(text)
@@ -219,10 +225,29 @@ class BaseAgent:
     @staticmethod
     def _parse_json(text: str) -> dict:
         text = text.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            text = "\n".join(lines[1:-1]) if len(lines) > 2 else text
+
+        # 1. Direct parse (fastest path — model followed instructions)
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            return {"raw": text}
+            pass
+
+        # 2. Extract from ```json ... ``` or ``` ... ``` fences anywhere in text
+        fence_match = re.search(r"```(?:json)?\s*\n([\s\S]*?)\n```", text)
+        if fence_match:
+            try:
+                return json.loads(fence_match.group(1).strip())
+            except json.JSONDecodeError:
+                pass
+
+        # 3. Find the outermost { ... } block (handles leading/trailing prose)
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            try:
+                return json.loads(text[start : end + 1])
+            except json.JSONDecodeError:
+                pass
+
+        print(f"[base_agent] WARNING: could not parse JSON from LLM response (len={len(text)})")
+        return {"raw": text}
