@@ -39,4 +39,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           ARTIFACTS_PATH: ${{ secrets.ARTIFACTS_PATH }}
           FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force || 'false' }}
-        run: python -m agents.market_analyst.run_market_analyst scheduler
+        run: python -m agents.market_analyst.run_market_analyst ${{ github.event_name == 'workflow_dispatch' && 'manual' || 'scheduler' }}
