@@ -2,6 +2,17 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as path from 'path';
+
+// pg returns TIMESTAMP WITHOUT TIME ZONE (OID 1114) as a bare string like
+// "2026-06-19 14:45:00.123456" with no timezone indicator.  Node's Date
+// constructor treats that as *local* time, baking the server's TZ offset
+// into the serialised JSON before the browser ever sees it.
+// Force both timestamp OIDs to be parsed as UTC so the stored value is
+// faithfully preserved — Python always writes utcnow() (UTC, naive).
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pgTypes = require('pg').types;
+pgTypes.setTypeParser(1114, (v: string) => (v ? new Date(v.replace(' ', 'T') + 'Z') : null));
+pgTypes.setTypeParser(1184, (v: string) => (v ? new Date(v) : null));
 import { AgentRunsModule } from './agent-runs/agent-runs.module';
 import { AuthModule } from './auth/auth.module';
 import { AgentRun } from './common/entities/agent-run.entity';
