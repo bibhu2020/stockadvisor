@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { fmtDateTime } from '../utils/format'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { BarChart, LineChart, PieChart, GaugeChart } from 'echarts/charts'
@@ -177,7 +178,7 @@ function statusColor(s: string) {
             <td :class="tx.realized_pnl > 0 ? 'green' : tx.realized_pnl < 0 ? 'red' : ''">
               {{ tx.realized_pnl != null ? '$' + tx.realized_pnl.toFixed(2) : '—' }}
             </td>
-            <td>{{ tx.executed_at?.slice(0,10) }}</td>
+            <td>{{ fmtDateTime(tx.executed_at) }}</td>
           </tr>
         </tbody>
       </table>
@@ -189,21 +190,44 @@ function statusColor(s: string) {
 
 <style scoped>
 .page-h { font-size: 1.5rem; font-weight: 700; color: #1e3a5f; margin-bottom: 20px; }
-.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-.kpi-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.kpi-label { font-size: 0.8rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
-.kpi-value { font-size: 1.8rem; font-weight: 700; color: #1e3a5f; }
-.kpi-value.green { color: #27ae60; }
-.kpi-value.red { color: #e74c3c; }
-.chart-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; }
-.chart-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.chart-card h3 { font-size: 0.95rem; font-weight: 700; color: #374151; margin-bottom: 12px; }
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+.kpi-card {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 14px; padding: 18px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+}
+.kpi-label { font-size: 0.72rem; color: #9ca3af; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.kpi-value { font-size: 1.65rem; font-weight: 800; color: #1e3a5f; }
+.kpi-value.green { color: #16a34a; }
+.kpi-value.red { color: #dc2626; }
+.chart-row { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 18px; }
+.chart-card {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 14px; padding: 18px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+}
+.chart-card h3 { font-size: 0.82rem; font-weight: 700; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
 .chart-card.wide { grid-column: span 1; }
-.wins-label { text-align: center; font-size: 0.85rem; color: #9ca3af; margin-top: 4px; }
-.section-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
-.section-card h3 { font-size: 0.95rem; font-weight: 700; color: #374151; margin-bottom: 16px; }
-.agent-row { display: flex; gap: 16px; flex-wrap: wrap; }
-.agent-card { background: #f9fafb; border-radius: 8px; padding: 14px 20px; min-width: 180px; }
+.wins-label { text-align: center; font-size: 0.78rem; color: #9ca3af; margin-top: 4px; }
+.section-card {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 14px; padding: 18px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  margin-bottom: 18px;
+}
+.section-card h3 { font-size: 0.82rem; font-weight: 700; color: #374151; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+.agent-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.agent-card {
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 10px; padding: 12px 18px; min-width: 160px;
+}
 .agent-name { font-weight: 700; font-size: 0.8rem; color: #374151; margin-bottom: 4px; }
 .agent-status { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
 .agent-time { font-size: 0.75rem; color: #9ca3af; }

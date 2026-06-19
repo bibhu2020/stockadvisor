@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { fmtDateTime, fmtDate } from '../utils/format'
 import api from '../api'
 
 const tab = ref<'runs' | 'users' | 'settings'>('runs')
@@ -232,7 +233,7 @@ function lastRunFor(type: string) {
               <span :style="{ color: statusColor(lastRunFor(agent.type)!.status) }">
                 ● {{ lastRunFor(agent.type)!.status }}
               </span>
-              &nbsp;{{ lastRunFor(agent.type)!.started_at?.slice(0, 16) }}
+              &nbsp;{{ fmtDateTime(lastRunFor(agent.type)!.started_at) }}
             </div>
           </div>
         </div>
@@ -269,7 +270,7 @@ function lastRunFor(type: string) {
           <span class="run-type">{{ run.agent_type.replace(/_/g, ' ').toUpperCase() }}</span>
           <span class="run-id">#{{ run.id }}</span>
           <span class="run-status" :style="{ color: statusColor(run.status) }">● {{ run.status }}</span>
-          <span class="run-date">{{ run.started_at?.slice(0, 16) }}</span>
+          <span class="run-date">{{ fmtDateTime(run.started_at) }}</span>
           <span class="run-by">{{ run.triggered_by }}</span>
           <span class="duration" v-if="run.finished_at">
             {{ Math.round((new Date(run.finished_at).getTime() - new Date(run.started_at).getTime()) / 1000) }}s
@@ -300,7 +301,7 @@ function lastRunFor(type: string) {
             <td>{{ u.name }}</td>
             <td>{{ u.email }}</td>
             <td><span :class="['role-badge', u.role]">{{ u.role }}</span></td>
-            <td>{{ u.created_at?.slice(0, 10) }}</td>
+            <td>{{ fmtDate(u.created_at) }}</td>
             <td>
               <button v-if="u.role === 'pending'" @click="approve(u.id)" class="approve-btn">Approve</button>
               <span v-else class="no-action">—</span>

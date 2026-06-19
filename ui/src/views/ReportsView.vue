@@ -350,8 +350,9 @@ function gain(p: any) {
 /* ── Report row — floating card effect ─────────────────────────────── */
 .report-row {
   position: relative;
-  background: #fff;
-  border: 1px solid #e8edf5;
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.55);
   border-radius: 14px;
   margin: 5px 0;
   padding: 14px 8px;
@@ -368,8 +369,8 @@ function gain(p: any) {
     0 2px 0 0 var(--accent-col, #1e3a5f),
     0 8px 32px rgba(30, 58, 95, 0.13),
     0 2px 8px rgba(30, 58, 95, 0.06);
-  border-color: #c7d7f0;
-  background: #fafcff;
+  border-color: rgba(199,215,240,0.8);
+  background: rgba(250,252,255,0.9);
   z-index: 5;
 }
 /* Gold accent left bar that slides in on hover */
@@ -462,10 +463,13 @@ function gain(p: any) {
   padding: 20px; backdrop-filter: blur(3px);
 }
 .modal {
-  background: #fff; border-radius: 20px;
+  background: rgba(255,255,255,0.94);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: 20px;
   width: 100%; max-width: 820px; max-height: 92vh;
   display: flex; flex-direction: column; overflow: hidden;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.3);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.25);
 }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s, transform 0.2s; }
 .modal-enter-from, .modal-leave-to       { opacity: 0; transform: translateY(16px) scale(0.97); }

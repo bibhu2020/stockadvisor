@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { fmtDateTime } from '../utils/format'
 import api from '../api'
 
 const router = useRouter()
@@ -159,7 +160,7 @@ function exportCsv() {
               </button>
               <span v-else class="muted">—</span>
             </td>
-            <td data-label="Date" class="muted">{{ tx.executed_at?.slice(0,16) }}</td>
+            <td data-label="Date" class="muted">{{ fmtDateTime(tx.executed_at) }}</td>
           </tr>
         </tbody>
       </table>
@@ -178,7 +179,13 @@ function exportCsv() {
   padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;
 }
 .filters button { padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; }
-.table-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.table-card {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 14px; padding: 18px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+}
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .tx-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 860px; }
 .tx-table th { background: #f3f4f6; padding: 10px 12px; text-align: left; font-weight: 600; color: #6b7280; }
@@ -240,13 +247,14 @@ function exportCsv() {
   .tx-table tr {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto auto;
-    background: #fff;
+    grid-template-rows: auto auto auto auto;
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.6);
     border-radius: 12px;
     margin-bottom: 10px;
     padding: 12px 14px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
   }
   .tx-table tr.row-closed { opacity: 0.65; }
 
@@ -260,17 +268,17 @@ function exportCsv() {
     text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px;
   }
 
-  /* Explicit grid placement for visible cells */
+  /* Explicit grid placement — 4 rows */
   .tx-table td[data-label="Symbol"]     { grid-column: 1; grid-row: 1; }
   .tx-table td[data-label="Action"]     { grid-column: 2; grid-row: 1; align-items: flex-end; }
   .tx-table td[data-label="Exec Price"] { grid-column: 1; grid-row: 2; }
-  .tx-table td[data-label="P&L"]        { grid-column: 2; grid-row: 2; align-items: flex-end; }
-  .tx-table td[data-label="Trigger"]    { grid-column: 1; grid-row: 3; }
-  .tx-table td[data-label="Date"]       { grid-column: 2; grid-row: 3; align-items: flex-end; }
+  .tx-table td[data-label="Qty"]        { grid-column: 2; grid-row: 2; align-items: flex-end; }
+  .tx-table td[data-label="Mkt Price"]  { grid-column: 1; grid-row: 3; }
+  .tx-table td[data-label="P&L"]        { grid-column: 2; grid-row: 3; align-items: flex-end; }
+  .tx-table td[data-label="Trigger"]    { grid-column: 1; grid-row: 4; }
+  .tx-table td[data-label="Date"]       { grid-column: 2; grid-row: 4; align-items: flex-end; }
 
   /* Hide secondary columns */
-  .tx-table td[data-label="Mkt Price"],
-  .tx-table td[data-label="Qty"],
   .tx-table td[data-label="Entry"],
   .tx-table td[data-label="Target"],
   .tx-table td[data-label="Stop Loss"],

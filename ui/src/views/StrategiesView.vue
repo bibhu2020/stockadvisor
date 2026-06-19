@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { fmtDate } from '../utils/format'
 import api from '../api'
 
 const route = useRoute()
@@ -78,7 +79,7 @@ function togglePrompt(key: string) {
             <span class="source-badge" :class="s.source">{{ s.source }}</span>
           </div>
           <div class="header-right">
-            <span class="date">{{ s.created_at?.slice(0,10) }}</span>
+            <span class="date">{{ fmtDate(s.created_at) }}</span>
             <span v-if="s.performance_vs_spy != null" :class="s.performance_vs_spy >= 0 ? 'green' : 'red'">
               vs SPY: ${{ s.performance_vs_spy?.toFixed(2) }}
             </span>

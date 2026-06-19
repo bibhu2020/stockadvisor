@@ -103,8 +103,10 @@ function logout() {
 
 /* ── Sidebar (desktop) ─────────────────────────────────────────── */
 .sidebar {
-  width: 220px; min-width: 220px; background: #1e3a5f; color: #fff;
+  width: 220px; min-width: 220px; color: #fff;
+  background: linear-gradient(180deg, #162d4e 0%, #1e3a5f 60%, #1a3457 100%);
   display: flex; flex-direction: column; transition: width 0.2s, min-width 0.2s;
+  box-shadow: 2px 0 16px rgba(0,0,0,0.12);
 }
 .sidebar.collapsed { width: 60px; min-width: 60px; }
 .logo {
@@ -132,8 +134,13 @@ function logout() {
 .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 24px; height: 60px; background: #fff;
-  border-bottom: 1px solid #e5e7eb; flex-shrink: 0;
+  padding: 0 24px; height: 56px;
+  background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255,255,255,0.55);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+  flex-shrink: 0;
 }
 .mobile-brand { display: none; font-weight: 800; color: #1e3a5f; font-size: 1rem; }
 .topbar-right { display: flex; align-items: center; gap: 16px; }
@@ -156,7 +163,7 @@ function logout() {
   border-radius: 6px; cursor: pointer; font-size: 0.875rem;
 }
 .logout-btn:hover { background: #dc2626; }
-.content { flex: 1; overflow-y: auto; padding: 24px; background: #f9fafb; }
+.content { flex: 1; overflow-y: auto; padding: 24px; background: transparent; }
 
 /* ── Mobile bottom nav (hidden on desktop) ─────────────────────── */
 .bottom-nav { display: none; }

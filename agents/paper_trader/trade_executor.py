@@ -86,6 +86,9 @@ def execute_buys(session: Session, buy_orders: list[dict], last_report,
         sym    = order["symbol"]
         price  = order["price"]
         qty    = order.get("quantity", 1)
+        if not qty or qty <= 0:
+            log(f"  {sym}: quantity={qty} — skipping zero-quantity order")
+            continue
         amount = round(price * qty, 2)
 
         # Hard cap: existing deployed + already spent this run + this order ≤ total capital
