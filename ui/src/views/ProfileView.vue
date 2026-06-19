@@ -17,6 +17,28 @@ const confirmPassword = ref('')
 const passwordMsg = ref<{ text: string; ok: boolean } | null>(null)
 const savingPassword = ref(false)
 
+const clearing = ref(false)
+const clearMsg  = ref<string | null>(null)
+
+async function clearCacheAndRefresh() {
+  clearing.value = true
+  clearMsg.value = null
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(regs.map((r) => r.unregister()))
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys()
+      await Promise.all(keys.map((k) => caches.delete(k)))
+    }
+    window.location.reload()
+  } catch {
+    clearMsg.value = 'Could not clear cache — try a manual hard-refresh (Ctrl+Shift+R).'
+    clearing.value = false
+  }
+}
+
 const roleColor: Record<string, string> = {
   admin: '#1e3a5f',
   guest: '#15803d',
@@ -147,6 +169,21 @@ async function savePassword() {
           </button>
         </div>
 
+        <!-- Clear PWA cache -->
+        <div class="card cache-card">
+          <h3 class="card-h">App Cache</h3>
+          <p class="cache-desc">
+            This app caches assets locally for offline use. If you're seeing stale UI
+            or missing updates after a deployment, clear the cache and reload.
+          </p>
+          <div v-if="clearMsg" class="msg err">{{ clearMsg }}</div>
+          <button class="btn-danger" :disabled="clearing" @click="clearCacheAndRefresh">
+            <span v-if="clearing" class="spinner"></span>
+            <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.8"/></svg>
+            {{ clearing ? 'Clearing…' : 'Clear Cache & Reload' }}
+          </button>
+        </div>
+
       </div>
     </div>
   </div>
@@ -221,6 +258,17 @@ async function savePassword() {
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.cache-card { border: 1px solid #fecdd3; background: #fff9f9; }
+.cache-desc { font-size: 0.82rem; color: #6b7280; line-height: 1.6; margin: 0 0 16px; }
+.btn-danger {
+  padding: 10px 20px; background: #dc2626; color: #fff;
+  border: none; border-radius: 8px; font-weight: 700; font-size: 0.88rem;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  transition: background 0.15s;
+}
+.btn-danger:hover:not(:disabled) { background: #b91c1c; }
+.btn-danger:disabled { opacity: 0.55; cursor: not-allowed; }
 
 @media (max-width: 700px) {
   .profile-grid { grid-template-columns: 1fr; }
