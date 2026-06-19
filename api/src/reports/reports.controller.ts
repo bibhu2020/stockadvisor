@@ -35,9 +35,32 @@ export class ReportsController {
 
     const pdfPath = await this.svc.getPdfPath(+id);
 
-    // GitHub-hosted artifact — redirect the browser directly to the raw URL
+    // GitHub-hosted artifact — proxy through the server so the bearer token
+    // is used on the server side (raw.githubusercontent.com requires auth for
+    // private repos and the browser has no credentials for it).
     if (pdfPath.startsWith('http')) {
-      return res.redirect(302, pdfPath);
+      const ghToken = process.env.GITHUB_TOKEN ?? '';
+      const reqHeaders: Record<string, string> = ghToken
+        ? { Authorization: `token ${ghToken}` }
+        : {};
+      try {
+        const upstream = await fetch(pdfPath, {
+          headers: reqHeaders,
+          signal: AbortSignal.timeout(30_000),
+        });
+        if (!upstream.ok) {
+          res.status(404).json({ message: 'PDF not available from storage' });
+          return;
+        }
+        const buf = Buffer.from(await upstream.arrayBuffer());
+        const filename = pdfPath.split('/').pop() ?? 'report.pdf';
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        res.send(buf);
+      } catch {
+        res.status(502).json({ message: 'Failed to retrieve PDF from storage' });
+      }
+      return;
     }
 
     // Legacy: stream from local disk

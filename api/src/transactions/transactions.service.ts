@@ -23,6 +23,7 @@ export class TransactionsService {
       .addSelect('p.stop_loss_price',   'pos_stop_loss_price')
       .addSelect('p.status',            'pos_status')
       .addSelect('p.close_reason',      'pos_close_reason')
+      .andWhere('t.quantity > 0')
       .orderBy('t.executed_at', 'DESC')
       .take(500);
 

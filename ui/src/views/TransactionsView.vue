@@ -251,21 +251,21 @@ function exportCsv() {
     background: rgba(255,255,255,0.78);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.6);
-    border-radius: 12px;
-    margin-bottom: 10px;
-    padding: 12px 14px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    border-radius: 10px;
+    margin-bottom: 6px;
+    padding: 8px 10px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
   }
   .tx-table tr.row-closed { opacity: 0.65; }
 
   .tx-table td {
     display: flex; flex-direction: column;
-    padding: 5px 0; border: none; font-size: 0.85rem;
+    padding: 3px 0; border: none; font-size: 0.78rem;
   }
   .tx-table td::before {
     content: attr(data-label);
-    font-size: 0.63rem; font-weight: 700; color: #9ca3af;
-    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px;
+    font-size: 0.58rem; font-weight: 700; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1px;
   }
 
   /* Explicit grid placement — 4 rows */
