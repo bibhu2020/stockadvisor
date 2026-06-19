@@ -98,19 +98,35 @@ const pnlChartOption = () => ({
   }],
 })
 
-const portfolioChartOption = () => ({
-  tooltip: { trigger: 'axis', formatter: (p: any) => `${p[0].name}<br/>$${Number(p[0].value).toFixed(2)}` },
-  grid: { left: 56, right: 12, top: 12, bottom: 28 },
-  xAxis: { type: 'category', data: portfolioHistory.value.map((d: any) => d.snapshot_at?.slice(0,10)), axisLabel: { fontSize: 11 } },
-  yAxis: { type: 'value', axisLabel: { formatter: '${value}', fontSize: 11 } },
-  series: [{
-    name: 'Portfolio Value', type: 'line', smooth: true,
-    data: portfolioHistory.value.map((d: any) => d.total_value),
-    areaStyle: { opacity: 0.12, color: '#3b82f6' },
-    lineStyle: { color: '#3b82f6', width: 2 },
-    itemStyle: { color: '#3b82f6' },
-  }],
-})
+function dedupedPortfolioHistory() {
+  // Keep only the last snapshot per calendar day to avoid a cluttered x-axis
+  const byDay: Record<string, { date: string; value: number }> = {}
+  for (const d of portfolioHistory.value) {
+    const raw: string = d.snapshot_at ?? ''
+    const day = raw.slice(0, 10) // "2026-06-19" regardless of T or space separator
+    if (day) byDay[day] = { date: day, value: parseFloat(d.total_value) }
+  }
+  return Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date))
+}
+
+const portfolioChartOption = () => {
+  const pts = dedupedPortfolioHistory()
+  return {
+    tooltip: { trigger: 'axis', formatter: (p: any) => `${p[0].name}<br/>$${Number(p[0].value).toFixed(2)}` },
+    grid: { left: 60, right: 12, top: 12, bottom: 28 },
+    xAxis: { type: 'category', data: pts.map((d) => d.date), axisLabel: { fontSize: 10, rotate: pts.length > 10 ? 30 : 0 } },
+    yAxis: { type: 'value', axisLabel: { formatter: (v: number) => '$' + v.toLocaleString(), fontSize: 10 } },
+    series: [{
+      name: 'Portfolio Value', type: 'line', smooth: true,
+      data: pts.map((d) => d.value),
+      areaStyle: { opacity: 0.12, color: '#3b82f6' },
+      lineStyle: { color: '#3b82f6', width: 2 },
+      itemStyle: { color: '#3b82f6' },
+      symbol: pts.length <= 5 ? 'circle' : 'none',
+      symbolSize: 6,
+    }],
+  }
+}
 
 const sectorChartOption = () => ({
   tooltip: { trigger: 'item', formatter: '{b}: ${c} ({d}%)' },
@@ -291,7 +307,7 @@ function fmt$(v: number) {
     <div class="chart-row">
       <div class="chart-card wide">
         <h3>Portfolio Value Over Time</h3>
-        <VChart v-if="portfolioHistory.length" :option="portfolioChartOption()" style="height:200px" autoresize />
+        <VChart v-if="dedupedPortfolioHistory().length" :option="portfolioChartOption()" style="height:200px" autoresize />
         <div v-else class="chart-empty">No snapshots yet</div>
       </div>
       <div class="chart-card">

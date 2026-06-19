@@ -39,7 +39,7 @@ export class ReportsController {
     // is used on the server side (raw.githubusercontent.com requires auth for
     // private repos and the browser has no credentials for it).
     if (pdfPath.startsWith('http')) {
-      const ghToken = process.env.GITHUB_TOKEN ?? '';
+      const ghToken = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN ?? '';
       const reqHeaders: Record<string, string> = ghToken
         ? { Authorization: `token ${ghToken}` }
         : {};

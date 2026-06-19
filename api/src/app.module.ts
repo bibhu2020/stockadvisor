@@ -13,6 +13,7 @@ import * as path from 'path';
 const pgTypes = require('pg').types;
 pgTypes.setTypeParser(1114, (v: string) => (v ? new Date(v.replace(' ', 'T') + 'Z') : null));
 pgTypes.setTypeParser(1184, (v: string) => (v ? new Date(v) : null));
+import { SqliteDateSubscriber } from './common/sqlite-date.subscriber';
 import { AgentRunsModule } from './agent-runs/agent-runs.module';
 import { AuthModule } from './auth/auth.module';
 import { AgentRun } from './common/entities/agent-run.entity';
@@ -70,6 +71,7 @@ const ENTITIES = [
           type: 'better-sqlite3' as const,
           database: path.join(ROOT_DIR, 'data', 'stockadvisor.db'),
           entities: ENTITIES,
+          subscribers: [SqliteDateSubscriber],
           synchronize: false,
         };
       },

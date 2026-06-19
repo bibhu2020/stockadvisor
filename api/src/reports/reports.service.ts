@@ -18,7 +18,7 @@ export class ReportsService {
   }
 
   async getPdfPath(id: number): Promise<string> {
-    const r = await this.repo.findOne({ where: { id }, select: { pdf_path: true } });
+    const r = await this.repo.findOne({ where: { id } });
     if (!r || !r.pdf_path) throw new NotFoundException('PDF not found');
     return r.pdf_path;
   }
