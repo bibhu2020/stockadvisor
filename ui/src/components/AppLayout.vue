@@ -88,12 +88,12 @@ function logout() {
 
     <!-- Mobile bottom nav -->
     <nav class="bottom-nav">
-      <RouterLink to="/"             class="bn-item"><span class="bn-icon">📊</span><span class="bn-label">Dashboard</span></RouterLink>
-      <RouterLink to="/transactions" class="bn-item"><span class="bn-icon">💱</span><span class="bn-label">Trades</span></RouterLink>
-      <RouterLink to="/reports"      class="bn-item"><span class="bn-icon">📋</span><span class="bn-label">Reports</span></RouterLink>
-      <RouterLink to="/strategies"   class="bn-item"><span class="bn-icon">🧠</span><span class="bn-label">Strategy</span></RouterLink>
-      <RouterLink v-if="auth.isAdmin" to="/admin" class="bn-item"><span class="bn-icon">⚙️</span><span class="bn-label">Admin</span></RouterLink>
-      <RouterLink to="/profile"      class="bn-item"><span class="bn-icon">👤</span><span class="bn-label">Profile</span></RouterLink>
+      <RouterLink to="/"             class="bn-item bn-dashboard"><span class="bn-bubble"><span class="bn-icon">📊</span></span><span class="bn-label">Dashboard</span></RouterLink>
+      <RouterLink to="/transactions" class="bn-item bn-trades"   ><span class="bn-bubble"><span class="bn-icon">💱</span></span><span class="bn-label">Trades</span></RouterLink>
+      <RouterLink to="/reports"      class="bn-item bn-reports"  ><span class="bn-bubble"><span class="bn-icon">📋</span></span><span class="bn-label">Reports</span></RouterLink>
+      <RouterLink to="/strategies"   class="bn-item bn-strategy" ><span class="bn-bubble"><span class="bn-icon">🧠</span></span><span class="bn-label">Strategy</span></RouterLink>
+      <RouterLink v-if="auth.isAdmin" to="/admin" class="bn-item bn-admin"><span class="bn-bubble"><span class="bn-icon">⚙️</span></span><span class="bn-label">Admin</span></RouterLink>
+      <RouterLink to="/profile"      class="bn-item bn-profile"  ><span class="bn-bubble"><span class="bn-icon">👤</span></span><span class="bn-label">Profile</span></RouterLink>
     </nav>
   </div>
 </template>
@@ -184,28 +184,86 @@ function logout() {
   .bottom-nav {
     display: flex;
     position: fixed; bottom: 0; left: 0; right: 0;
-    background: rgba(30, 58, 95, 0.97);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid rgba(255,255,255,0.14);
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.18);
+    background: rgba(6, 14, 34, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 -6px 32px rgba(0,0,0,0.3);
     z-index: 200;
-    /* push items away from rounded screen corners and home indicator */
-    padding-left:   max(env(safe-area-inset-left,  0px), 10px);
-    padding-right:  max(env(safe-area-inset-right, 0px), 10px);
+    padding-left:   max(env(safe-area-inset-left,  0px), 6px);
+    padding-right:  max(env(safe-area-inset-right, 0px), 6px);
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
   }
+
   .bn-item {
     flex: 1; display: flex; flex-direction: column; align-items: center;
-    padding: 10px 6px 8px; color: rgba(255,255,255,0.5);
-    text-decoration: none; min-width: 0; border-radius: 12px;
-    transition: color 0.15s;
+    padding: 8px 2px 6px; color: rgba(255,255,255,0.28);
+    text-decoration: none; min-width: 0;
+    transition: color 0.22s ease;
+    -webkit-tap-highlight-color: transparent;
   }
-  .bn-item.router-link-active {
-    color: #fff;
-    background: rgba(255,255,255,0.1);
+
+  /* Floating bubble that holds the emoji */
+  .bn-bubble {
+    width: 46px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 18px;
+    transition:
+      background   0.25s ease,
+      box-shadow   0.25s ease,
+      transform    0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  .bn-icon  { font-size: 1.3rem; line-height: 1; }
-  .bn-label { font-size: 0.62rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; font-weight: 500; }
+
+  .bn-icon  { font-size: 1.35rem; line-height: 1; display: block; }
+  .bn-label {
+    font-size: 0.58rem; margin-top: 3px; font-weight: 600;
+    letter-spacing: 0.04em; transition: color 0.22s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 100%; text-align: center;
+  }
+
+  /* ── Active state: lift + glow, per-route accent ── */
+  .bn-item.router-link-exact-active,
+  .bn-item.router-link-active      { color: #fff; }
+
+  /* Dashboard — blue */
+  .bn-dashboard.router-link-exact-active .bn-bubble {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    box-shadow: 0 4px 20px rgba(59,130,246,0.55), 0 0 8px rgba(59,130,246,0.3);
+    transform: translateY(-6px) scale(1.1);
+  }
+  /* Trades — emerald */
+  .bn-trades.router-link-active .bn-bubble {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 20px rgba(16,185,129,0.55), 0 0 8px rgba(16,185,129,0.3);
+    transform: translateY(-6px) scale(1.1);
+  }
+  /* Reports — amber */
+  .bn-reports.router-link-active .bn-bubble {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    box-shadow: 0 4px 20px rgba(245,158,11,0.55), 0 0 8px rgba(245,158,11,0.3);
+    transform: translateY(-6px) scale(1.1);
+  }
+  /* Strategy — violet */
+  .bn-strategy.router-link-active .bn-bubble {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    box-shadow: 0 4px 20px rgba(139,92,246,0.55), 0 0 8px rgba(139,92,246,0.3);
+    transform: translateY(-6px) scale(1.1);
+  }
+  /* Admin — slate */
+  .bn-admin.router-link-active .bn-bubble {
+    background: linear-gradient(135deg, #64748b, #475569);
+    box-shadow: 0 4px 20px rgba(100,116,139,0.55), 0 0 8px rgba(100,116,139,0.3);
+    transform: translateY(-6px) scale(1.1);
+  }
+  /* Profile — rose */
+  .bn-profile.router-link-active .bn-bubble {
+    background: linear-gradient(135deg, #f43f5e, #be123c);
+    box-shadow: 0 4px 20px rgba(244,63,94,0.55), 0 0 8px rgba(244,63,94,0.3);
+    transform: translateY(-6px) scale(1.1);
+  }
+
+  /* Tap press feel */
+  .bn-item:active .bn-bubble { transform: translateY(-2px) scale(0.96); }
 }
 </style>
