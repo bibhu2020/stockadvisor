@@ -1,48 +1,40 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import * as cron from 'node-cron';
 import { AgentRunsService } from './agent-runs.service';
 
 @Injectable()
-export class AgentRunsScheduler {
+export class AgentRunsScheduler implements OnModuleInit {
   private readonly logger = new Logger(AgentRunsScheduler.name);
 
   constructor(private readonly agentRunsService: AgentRunsService) {}
 
-  // Market Analyst — 8:30 AM EST / 9:30 AM EDT (13:30 UTC), Mon–Fri
-  // force=true: pre-market research runs before NYSE open; bypass time-window check
-  @Cron('30 13 * * 1-5', { timeZone: 'UTC' })
-  async runMarketAnalyst() {
-    this.logger.log('Scheduled trigger: market_analyst');
-    await this.agentRunsService.trigger('market_analyst', true);
+  onModuleInit() {
+    // Market Analyst — 8:30 AM EST / 9:30 AM EDT (13:30 UTC), Mon–Fri
+    // force=true: pre-market research, bypass NYSE time-window check
+    cron.schedule('30 13 * * 1-5', () => this.dispatch('market_analyst', true), { timezone: 'UTC' });
+
+    // Paper Trader — 9:30 AM EST / 10:30 AM EDT (14:30 UTC), Mon–Fri
+    cron.schedule('30 14 * * 1-5', () => this.dispatch('paper_trader', false), { timezone: 'UTC' });
+
+    // Paper Trader — 12:00 PM EST / 1:00 PM EDT (17:00 UTC), Mon–Fri
+    cron.schedule('0 17 * * 1-5', () => this.dispatch('paper_trader', false), { timezone: 'UTC' });
+
+    // Paper Trader — 2:45 PM EST / 3:45 PM EDT (19:45 UTC), Mon–Fri
+    cron.schedule('45 19 * * 1-5', () => this.dispatch('paper_trader', false), { timezone: 'UTC' });
+
+    // Retrospective — Mon 5:00 AM UTC (= Sun 11:00 PM CST)
+    // force=false: run_retrospective.py gates to last Sunday of the month
+    cron.schedule('0 5 * * 1', () => this.dispatch('retrospective', false), { timezone: 'UTC' });
+
+    this.logger.log('Agent cron schedules registered');
   }
 
-  // Paper Trader — 10:30 AM EDT / 9:30 AM EST (14:30 UTC), Mon–Fri
-  // force=false: market_hours.py gates on NYSE holidays + time window
-  @Cron('30 14 * * 1-5', { timeZone: 'UTC' })
-  async runPaperTraderMorning() {
-    this.logger.log('Scheduled trigger: paper_trader (morning)');
-    await this.agentRunsService.trigger('paper_trader', false);
-  }
-
-  // Paper Trader — 1:00 PM EDT / 12:00 PM EST (17:00 UTC), Mon–Fri
-  @Cron('0 17 * * 1-5', { timeZone: 'UTC' })
-  async runPaperTraderMidday() {
-    this.logger.log('Scheduled trigger: paper_trader (midday)');
-    await this.agentRunsService.trigger('paper_trader', false);
-  }
-
-  // Paper Trader — 3:45 PM EDT / 2:45 PM EST (19:45 UTC), Mon–Fri
-  @Cron('45 19 * * 1-5', { timeZone: 'UTC' })
-  async runPaperTraderAfternoon() {
-    this.logger.log('Scheduled trigger: paper_trader (afternoon)');
-    await this.agentRunsService.trigger('paper_trader', false);
-  }
-
-  // Retrospective — Mon 5:00 AM UTC = Sun 11:00 PM CST, every week
-  // force=false: run_retrospective.py gates to last Sunday of the month
-  @Cron('0 5 * * 1', { timeZone: 'UTC' })
-  async runRetrospective() {
-    this.logger.log('Scheduled trigger: retrospective');
-    await this.agentRunsService.trigger('retrospective', false);
+  private async dispatch(agentType: string, force: boolean) {
+    this.logger.log(`Scheduled trigger: ${agentType} (force=${force})`);
+    try {
+      await this.agentRunsService.trigger(agentType, force);
+    } catch (err) {
+      this.logger.error(`Scheduled dispatch failed for ${agentType}: ${err}`);
+    }
   }
 }
