@@ -8,12 +8,12 @@ export class AgentRunsScheduler {
 
   constructor(private readonly agentRunsService: AgentRunsService) {}
 
-  // Market Analyst — 10:30 AM EDT / 9:30 AM EST (14:30 UTC), Mon–Fri
-  // force=false: market_hours.py gates on NYSE holidays + time window
-  @Cron('30 14 * * 1-5', { timeZone: 'UTC' })
+  // Market Analyst — 8:30 AM EST / 9:30 AM EDT (13:30 UTC), Mon–Fri
+  // force=true: pre-market research runs before NYSE open; bypass time-window check
+  @Cron('30 13 * * 1-5', { timeZone: 'UTC' })
   async runMarketAnalyst() {
     this.logger.log('Scheduled trigger: market_analyst');
-    await this.agentRunsService.trigger('market_analyst', false);
+    await this.agentRunsService.trigger('market_analyst', true);
   }
 
   // Paper Trader — 10:30 AM EDT / 9:30 AM EST (14:30 UTC), Mon–Fri
