@@ -247,7 +247,7 @@ function exportCsv() {
   /* ── Card shell ─────────────────────────────────────── */
   .tx-table tr {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     background: rgba(255,255,255,0.88);
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(0,0,0,0.07);
@@ -273,9 +273,9 @@ function exportCsv() {
     text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 2px;
   }
 
-  /* ── Row 1: Symbol + Action ─── header ─────────────── */
+  /* ── Row 1: Symbol (span 2) + Action ─── header ────── */
   .tx-table td[data-label="Symbol"] {
-    grid-column: 1; grid-row: 1;
+    grid-column: 1 / span 2; grid-row: 1;
     padding-bottom: 8px;
     border-bottom: 1px solid rgba(0,0,0,0.06);
     margin-bottom: 6px;
@@ -284,7 +284,7 @@ function exportCsv() {
     font-size: 1.1rem; font-weight: 800; color: #0f172a; letter-spacing: 0.02em;
   }
   .tx-table td[data-label="Action"] {
-    grid-column: 2; grid-row: 1;
+    grid-column: 3; grid-row: 1;
     align-items: flex-end;
     padding-bottom: 8px;
     border-bottom: 1px solid rgba(0,0,0,0.06);
@@ -294,25 +294,24 @@ function exportCsv() {
     font-size: 0.72rem; padding: 3px 10px; border-radius: 6px;
   }
 
-  /* ── Row 2: Exec Price + Qty ────────────────────────── */
+  /* ── Row 2: Exec Price | Qty | Mkt Price ───────────── */
   .tx-table td[data-label="Exec Price"] { grid-column: 1; grid-row: 2; }
-  .tx-table td[data-label="Qty"]        { grid-column: 2; grid-row: 2; align-items: flex-end; }
+  .tx-table td[data-label="Qty"]        { grid-column: 2; grid-row: 2; align-items: center; }
+  .tx-table td[data-label="Mkt Price"]  { grid-column: 3; grid-row: 2; align-items: flex-end; }
 
-  /* ── Row 3: Mkt Price + P&L ─────────────────────────── */
-  .tx-table td[data-label="Mkt Price"] { grid-column: 1; grid-row: 3; }
+  /* ── Row 3: P&L | Trigger | Date ─── footer ─────────── */
   .tx-table td[data-label="P&L"] {
-    grid-column: 2; grid-row: 3;
-    align-items: flex-end;
+    grid-column: 1; grid-row: 3;
+    padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.06); margin-top: 6px;
     font-size: 0.9rem; font-weight: 700;
   }
-
-  /* ── Row 4: Trigger + Date ─── footer ──────────────── */
   .tx-table td[data-label="Trigger"] {
-    grid-column: 1; grid-row: 4;
+    grid-column: 2; grid-row: 3;
+    align-items: center;
     padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.06); margin-top: 6px;
   }
   .tx-table td[data-label="Date"] {
-    grid-column: 2; grid-row: 4;
+    grid-column: 3; grid-row: 3;
     align-items: flex-end;
     padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.06); margin-top: 6px;
   }
