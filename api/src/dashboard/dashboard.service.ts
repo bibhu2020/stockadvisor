@@ -27,8 +27,33 @@ export class DashboardService {
     }));
   }
 
-  portfolioHistory() {
-    return this.snapRepo.find({ order: { snapshot_at: 'ASC' }, take: 200 });
+  async portfolioHistory() {
+    const snaps = await this.snapRepo.find({ order: { snapshot_at: 'ASC' }, take: 200 });
+    if (!snaps.length) return [];
+
+    const sells = await this.txRepo.find({
+      where: { action: 'SELL' },
+      order: { executed_at: 'ASC' },
+    });
+
+    const INITIAL_CAPITAL = 5000;
+    let cumRealized = 0;
+    let si = 0;
+
+    return snaps.map((snap) => {
+      while (si < sells.length && +sells[si].executed_at <= +snap.snapshot_at) {
+        cumRealized += sells[si].realized_pnl ?? 0;
+        si++;
+      }
+      const realized_pnl = +cumRealized.toFixed(2);
+      const unrealized_pnl = +(snap.total_value - INITIAL_CAPITAL - cumRealized).toFixed(2);
+      return {
+        snapshot_at: snap.snapshot_at,
+        total_value: snap.total_value,
+        realized_pnl,
+        unrealized_pnl,
+      };
+    });
   }
 
   async winRate() {

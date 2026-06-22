@@ -98,33 +98,101 @@ const pnlChartOption = () => ({
   }],
 })
 
-function dedupedPortfolioHistory() {
-  // Keep only the last snapshot per calendar day to avoid a cluttered x-axis
-  const byDay: Record<string, { date: string; value: number }> = {}
+type ChartPoint = { date: string; value: number; realized_pnl: number; unrealized_pnl: number }
+
+const chartPoints = computed<ChartPoint[]>(() => {
+  // Keep only the last snapshot per calendar day
+  const byDay: Record<string, ChartPoint> = {}
   for (const d of portfolioHistory.value) {
-    const raw: string = d.snapshot_at ?? ''
-    const day = raw.slice(0, 10) // "2026-06-19" regardless of T or space separator
-    if (day) byDay[day] = { date: day, value: parseFloat(d.total_value) }
+    const raw: string = typeof d.snapshot_at === 'string'
+      ? d.snapshot_at
+      : (d.snapshot_at as Date).toISOString()
+    const day = raw.slice(0, 10)
+    if (day) byDay[day] = {
+      date: day,
+      value: parseFloat(d.total_value),
+      realized_pnl: d.realized_pnl ?? 0,
+      unrealized_pnl: d.unrealized_pnl ?? 0,
+    }
   }
-  return Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date))
-}
+  const pts = Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date))
+
+  // Append live "today" point when prices are ready and today is not already in snapshots
+  const today = new Date().toISOString().slice(0, 10)
+  const pricesReady = !pricesLoading.value || portfolio.value.open_positions.length === 0
+  if (pricesReady && pts.at(-1)?.date !== today) {
+    pts.push({
+      date: today,
+      value: totalPortfolioValue.value,
+      realized_pnl: summary.value.total_pnl,
+      unrealized_pnl: unrealizedPnl.value,
+    })
+  }
+  return pts
+})
 
 const portfolioChartOption = () => {
-  const pts = dedupedPortfolioHistory()
+  const pts = chartPoints.value
   return {
-    tooltip: { trigger: 'axis', formatter: (p: any) => `${p[0].name}<br/>$${Number(p[0].value).toFixed(2)}` },
-    grid: { left: 60, right: 12, top: 12, bottom: 28 },
-    xAxis: { type: 'category', data: pts.map((d) => d.date), axisLabel: { fontSize: 10, rotate: pts.length > 10 ? 30 : 0 } },
-    yAxis: { type: 'value', axisLabel: { formatter: (v: number) => '$' + v.toLocaleString(), fontSize: 10 } },
-    series: [{
-      name: 'Portfolio Value', type: 'line', smooth: true,
-      data: pts.map((d) => d.value),
-      areaStyle: { opacity: 0.12, color: '#3b82f6' },
-      lineStyle: { color: '#3b82f6', width: 2 },
-      itemStyle: { color: '#3b82f6' },
-      symbol: pts.length <= 5 ? 'circle' : 'none',
-      symbolSize: 6,
-    }],
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params: any[]) => {
+        const date = params[0]?.axisValueLabel ?? ''
+        let html = `<strong>${date}</strong>`
+        for (const p of params) {
+          const val: number = Array.isArray(p.value) ? p.value[1] : p.value
+          const signed = val >= 0 ? `$${val.toFixed(2)}` : `-$${Math.abs(val).toFixed(2)}`
+          html += `<br/>${p.marker}${p.seriesName}: ${signed}`
+        }
+        return html
+      },
+    },
+    legend: { data: ['Portfolio Value', 'Realized P&L', 'Unrealized P&L'], top: 0, right: 4, textStyle: { fontSize: 10 } },
+    grid: { left: 64, right: 68, top: 28, bottom: 24 },
+    xAxis: {
+      type: 'time',
+      axisLabel: {
+        fontSize: 10,
+        formatter: (val: number) => {
+          const d = new Date(val)
+          return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`
+        },
+      },
+    },
+    yAxis: [
+      { type: 'value', axisLabel: { formatter: (v: number) => '$' + v.toLocaleString(), fontSize: 10 } },
+      {
+        type: 'value', position: 'right',
+        axisLabel: { formatter: (v: number) => (v >= 0 ? '+' : '') + '$' + Math.abs(v).toFixed(0), fontSize: 10 },
+        splitLine: { show: false },
+      },
+    ],
+    series: [
+      {
+        name: 'Portfolio Value', type: 'line', yAxisIndex: 0,
+        data: pts.map((d) => [d.date, d.value]),
+        smooth: true,
+        areaStyle: { opacity: 0.1, color: '#3b82f6' },
+        lineStyle: { color: '#3b82f6', width: 2 },
+        itemStyle: { color: '#3b82f6' },
+        symbol: 'circle', symbolSize: pts.length <= 8 ? 5 : 0,
+      },
+      {
+        name: 'Realized P&L', type: 'line', yAxisIndex: 1,
+        data: pts.map((d) => [d.date, d.realized_pnl]),
+        lineStyle: { color: '#22c55e', width: 2 },
+        itemStyle: { color: '#22c55e' },
+        symbol: 'circle', symbolSize: 5,
+      },
+      {
+        name: 'Unrealized P&L', type: 'line', yAxisIndex: 1,
+        data: pts.map((d) => [d.date, d.unrealized_pnl]),
+        smooth: true,
+        lineStyle: { color: '#f59e0b', width: 2, type: 'dashed' },
+        itemStyle: { color: '#f59e0b' },
+        symbol: 'circle', symbolSize: pts.length <= 8 ? 5 : 0,
+      },
+    ],
   }
 }
 
@@ -307,7 +375,7 @@ function fmt$(v: number) {
     <div class="chart-row">
       <div class="chart-card wide">
         <h3>Portfolio Value Over Time</h3>
-        <VChart v-if="dedupedPortfolioHistory().length" :option="portfolioChartOption()" style="height:200px" autoresize />
+        <VChart v-if="chartPoints.length" :option="portfolioChartOption()" style="height:230px" autoresize />
         <div v-else class="chart-empty">No snapshots yet</div>
       </div>
       <div class="chart-card">
