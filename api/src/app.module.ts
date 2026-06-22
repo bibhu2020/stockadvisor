@@ -13,6 +13,7 @@ import * as path from 'path';
 const pgTypes = require('pg').types;
 pgTypes.setTypeParser(1114, (v: string) => (v ? new Date(v.replace(' ', 'T') + 'Z') : null));
 pgTypes.setTypeParser(1184, (v: string) => (v ? new Date(v) : null));
+import { ScheduleModule } from '@nestjs/schedule';
 import { SqliteDateSubscriber } from './common/sqlite-date.subscriber';
 import { AgentRunsModule } from './agent-runs/agent-runs.module';
 import { AuthModule } from './auth/auth.module';
@@ -48,6 +49,7 @@ const ENTITIES = [
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ENV_PATH }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
