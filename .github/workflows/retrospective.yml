@@ -1,10 +1,6 @@
 name: Retrospective Analyst — Monthly Strategy Review
 
 on:
-  schedule:
-    # Last Sunday of month 11:00 PM CST (UTC-6) = Monday 5:00 AM UTC
-    # Python script checks internally if it's the last Sunday of the month
-    - cron: '0 5 * * 1'
   workflow_dispatch:
     inputs:
       force:

@@ -24,7 +24,7 @@ export class AgentRunsService {
     return (run.log ?? '').slice(offset);
   }
 
-  async trigger(agentType: string): Promise<{ message: string }> {
+  async trigger(agentType: string, force = true): Promise<{ message: string }> {
     const workflows: Record<string, string> = {
       market_analyst: 'market_analyst.yml',
       paper_trader:   'paper_trader.yml',
@@ -45,7 +45,7 @@ export class AgentRunsService {
         Accept: 'application/vnd.github.v3+json',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ ref: 'main', inputs: { force: 'true' } }),
+      body: JSON.stringify({ ref: 'main', inputs: { force: force ? 'true' : 'false' } }),
     });
 
     if (!res.ok) {
@@ -53,7 +53,7 @@ export class AgentRunsService {
       throw new InternalServerErrorException(`GitHub dispatch failed (${res.status}): ${text}`);
     }
 
-    return { message: `${agentType} workflow dispatched (force=true)` };
+    return { message: `${agentType} workflow dispatched (force=${force})` };
   }
 
   async kill(id: number): Promise<{ ok: boolean; message: string }> {
