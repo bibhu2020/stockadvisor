@@ -110,7 +110,7 @@ function exportCsv() {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="tx in transactions" :key="tx.id" :class="{ 'row-closed': tx.pos_status === 'closed' }">
+          <tr v-for="tx in transactions" :key="tx.id" :class="['tx-row', tx.action.toLowerCase(), { 'row-closed': tx.pos_status === 'closed' }]">
             <td data-label="Symbol"><strong>{{ tx.symbol }}</strong></td>
             <td data-label="Action"><span :class="['badge', tx.action.toLowerCase()]">{{ tx.action }}</span></td>
             <td data-label="Exec Price" class="num">${{ tx.price?.toFixed(2) }}</td>
@@ -237,48 +237,87 @@ function exportCsv() {
   .filters input, .filters select { font-size: 0.8rem; padding: 7px 10px; flex: 1 1 calc(50% - 4px); }
   .filters button { width: 100%; }
 
-  /* Card-style rows instead of scrolling table */
-  .table-card   { padding: 0; background: transparent; box-shadow: none; }
+  /* Collapse table into cards */
+  .table-card   { padding: 0; background: transparent; box-shadow: none; border: none; }
   .table-scroll { overflow-x: visible; }
   .tx-table     { min-width: 0; }
-  .tx-table thead { display: none; }
+  .tx-table thead          { display: none; }
   .tx-table, .tx-table tbody { display: block; }
 
+  /* ── Card shell ─────────────────────────────────────── */
   .tx-table tr {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto auto auto;
-    background: rgba(255,255,255,0.78);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.6);
-    border-radius: 10px;
-    margin-bottom: 6px;
-    padding: 8px 10px;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0,0,0,0.07);
+    border-left: 4px solid #e2e8f0;
+    border-radius: 14px;
+    margin-bottom: 10px;
+    padding: 12px 14px 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    gap: 0 10px;
   }
-  .tx-table tr.row-closed { opacity: 0.65; }
+  .tx-table tr.buy       { border-left-color: #22c55e; }
+  .tx-table tr.sell      { border-left-color: #ef4444; }
+  .tx-table tr.row-closed { opacity: 0.62; }
 
+  /* ── All cells ──────────────────────────────────────── */
   .tx-table td {
     display: flex; flex-direction: column;
-    padding: 3px 0; border: none; font-size: 0.78rem;
+    padding: 3px 0; border: none; font-size: 0.82rem;
   }
   .tx-table td::before {
     content: attr(data-label);
-    font-size: 0.58rem; font-weight: 700; color: #9ca3af;
-    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1px;
+    font-size: 0.57rem; font-weight: 700; color: #b0bac5;
+    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 2px;
   }
 
-  /* Explicit grid placement — 4 rows */
-  .tx-table td[data-label="Symbol"]     { grid-column: 1; grid-row: 1; }
-  .tx-table td[data-label="Action"]     { grid-column: 2; grid-row: 1; align-items: flex-end; }
+  /* ── Row 1: Symbol + Action ─── header ─────────────── */
+  .tx-table td[data-label="Symbol"] {
+    grid-column: 1; grid-row: 1;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    margin-bottom: 6px;
+  }
+  .tx-table td[data-label="Symbol"] strong {
+    font-size: 1.1rem; font-weight: 800; color: #0f172a; letter-spacing: 0.02em;
+  }
+  .tx-table td[data-label="Action"] {
+    grid-column: 2; grid-row: 1;
+    align-items: flex-end;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    margin-bottom: 6px;
+  }
+  .tx-table td[data-label="Action"] .badge {
+    font-size: 0.72rem; padding: 3px 10px; border-radius: 6px;
+  }
+
+  /* ── Row 2: Exec Price + Qty ────────────────────────── */
   .tx-table td[data-label="Exec Price"] { grid-column: 1; grid-row: 2; }
   .tx-table td[data-label="Qty"]        { grid-column: 2; grid-row: 2; align-items: flex-end; }
-  .tx-table td[data-label="Mkt Price"]  { grid-column: 1; grid-row: 3; }
-  .tx-table td[data-label="P&L"]        { grid-column: 2; grid-row: 3; align-items: flex-end; }
-  .tx-table td[data-label="Trigger"]    { grid-column: 1; grid-row: 4; }
-  .tx-table td[data-label="Date"]       { grid-column: 2; grid-row: 4; align-items: flex-end; }
 
-  /* Hide secondary columns */
+  /* ── Row 3: Mkt Price + P&L ─────────────────────────── */
+  .tx-table td[data-label="Mkt Price"] { grid-column: 1; grid-row: 3; }
+  .tx-table td[data-label="P&L"] {
+    grid-column: 2; grid-row: 3;
+    align-items: flex-end;
+    font-size: 0.9rem; font-weight: 700;
+  }
+
+  /* ── Row 4: Trigger + Date ─── footer ──────────────── */
+  .tx-table td[data-label="Trigger"] {
+    grid-column: 1; grid-row: 4;
+    padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.06); margin-top: 6px;
+  }
+  .tx-table td[data-label="Date"] {
+    grid-column: 2; grid-row: 4;
+    align-items: flex-end;
+    padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.06); margin-top: 6px;
+  }
+
+  /* ── Hide secondary columns ─────────────────────────── */
   .tx-table td[data-label="Entry"],
   .tx-table td[data-label="Target"],
   .tx-table td[data-label="Stop Loss"],
