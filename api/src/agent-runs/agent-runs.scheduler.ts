@@ -32,7 +32,7 @@ export class AgentRunsScheduler implements OnModuleInit {
   private async dispatch(agentType: string, force: boolean) {
     this.logger.log(`Scheduled trigger: ${agentType} (force=${force})`);
     try {
-      await this.agentRunsService.trigger(agentType, force);
+      await this.agentRunsService.trigger(agentType, force, 'scheduled');
     } catch (err) {
       this.logger.error(`Scheduled dispatch failed for ${agentType}: ${err}`);
     }

@@ -7,6 +7,10 @@ on:
         description: 'Force run even if market is closed'
         required: false
         default: 'true'
+      triggered_by:
+        description: 'Who triggered this run (scheduled or manual)'
+        required: false
+        default: 'scheduled'
 
 concurrency:
   group: paper-trader
@@ -40,4 +44,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           ARTIFACTS_PATH: ${{ secrets.ARTIFACTS_PATH }}
           FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force || 'false' }}
-        run: python -m agents.paper_trader.run_paper_trader ${{ github.event_name == 'workflow_dispatch' && 'manual' || 'scheduler' }}
+        run: python -m agents.paper_trader.run_paper_trader ${{ github.event.inputs.triggered_by || 'scheduled' }}

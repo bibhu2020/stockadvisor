@@ -24,7 +24,7 @@ export class AgentRunsService {
     return (run.log ?? '').slice(offset);
   }
 
-  async trigger(agentType: string, force = true): Promise<{ message: string }> {
+  async trigger(agentType: string, force = true, triggeredBy = 'scheduled'): Promise<{ message: string }> {
     const workflows: Record<string, string> = {
       market_analyst: 'market_analyst.yml',
       paper_trader:   'paper_trader.yml',
@@ -45,7 +45,7 @@ export class AgentRunsService {
         Accept: 'application/vnd.github.v3+json',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ ref: 'main', inputs: { force: force ? 'true' : 'false' } }),
+      body: JSON.stringify({ ref: 'main', inputs: { force: force ? 'true' : 'false', triggered_by: triggeredBy } }),
     });
 
     if (!res.ok) {

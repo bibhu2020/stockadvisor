@@ -63,6 +63,6 @@ export class AgentRunsController {
     @Request() req: { user: { role: string } },
   ) {
     if (req.user.role !== 'admin') throw new ForbiddenException();
-    return this.svc.trigger(type);
+    return this.svc.trigger(type, true, 'manual');
   }
 }
