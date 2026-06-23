@@ -75,6 +75,7 @@ def main(triggered_by: str = "scheduler"):
         strategy_params = strategy.get_parameters()
         stop_loss_pct     = float(strategy_params.get("stop_loss_pct", 15))
         profit_target_pct = float(strategy_params.get("profit_target_pct", 5))
+        max_hold_days     = float(strategy_params.get("max_hold_days", 30))
         buying_power      = float(get_setting(session, "buying_power", "5000"))
         orch.log(f"Strategy: {strategy.name} (v{strategy.version})")
         orch.log(f"Buying power: ${buying_power:.2f}")
@@ -92,7 +93,7 @@ def main(triggered_by: str = "scheduler"):
         # 1. Monitor & exit open positions
         orch.log("--- Position Monitor ---")
         sell_orders = position_monitor.run(
-            session, stop_loss_pct, profit_target_pct, orch.log
+            session, stop_loss_pct, profit_target_pct, max_hold_days, orch.log
         )
         trade_executor.execute_sells(session, sell_orders, strategy_id, orch.run_id, orch.log)
         session.commit()
