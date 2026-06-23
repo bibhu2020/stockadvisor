@@ -81,32 +81,46 @@ def _nyse_holidays(year: int) -> set:
     return holidays
 
 
+def is_trading_day() -> bool:
+    """Return True if today is a NYSE trading day (weekday and not a holiday).
+
+    Never bypassed by FORCE_RUN — weekend/holiday checks are always enforced.
+    """
+    eastern = pytz.timezone("America/New_York")
+    now_et = datetime.now(eastern)
+    if now_et.weekday() >= 5:
+        return False
+    today = now_et.date()
+    return today not in _nyse_holidays(today.year)
+
+
 def is_open() -> bool:
+    """Return True if the market is currently open for trading.
+
+    FORCE_RUN=true bypasses the 9:30–4:00 ET time window (e.g. for pre-market
+    agents) but never bypasses the weekend/holiday check.
+    """
+    if not is_trading_day():
+        return False
+
     if os.getenv("FORCE_RUN", "false").lower() == "true":
         return True
 
     eastern = pytz.timezone("America/New_York")
     now_et = datetime.now(eastern)
-
-    if now_et.weekday() >= 5:
-        return False
-
-    today = now_et.date()
-    if today in _nyse_holidays(today.year):
-        return False
-
     open_time  = now_et.replace(hour=9,  minute=30, second=0, microsecond=0)
     close_time = now_et.replace(hour=16, minute=0,  second=0, microsecond=0)
     return open_time <= now_et <= close_time
 
 
 def check_or_exit(agent_name: str) -> None:
-    """Exit with code 0 (success/no-op) if market is closed."""
+    """Exit with code 0 (success/no-op) if market is closed or today is a non-trading day."""
     if not is_open():
         eastern = pytz.timezone("America/New_York")
         now_et = datetime.now(eastern)
         print(
             f"[market_hours] Market is closed at {now_et.strftime('%Y-%m-%d %H:%M %Z')}. "
-            f"{agent_name} will not run. Set FORCE_RUN=true to override."
+            f"{agent_name} will not run. "
+            f"(FORCE_RUN=true bypasses the time window but not weekends/holidays.)"
         )
         sys.exit(0)
