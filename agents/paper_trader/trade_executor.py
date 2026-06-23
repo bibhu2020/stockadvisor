@@ -50,12 +50,21 @@ def execute_sells(session: Session, sell_orders: list[dict],
         session.add(tx)
         _update_buying_power(session, amount)
 
-        notif_type = "stop_loss" if order["close_reason"] == "stop_loss" else "profit_booked"
+        close_reason = order["close_reason"]
+        if close_reason == "stop_loss":
+            notif_type  = "stop_loss"
+            notif_title = f"Stop Loss: {pos.symbol}"
+        elif close_reason == "profit_target":
+            notif_type  = "profit_booked"
+            notif_title = f"Profit Booked: {pos.symbol}"
+        else:
+            notif_type  = "position_closed"
+            notif_title = f"Position Closed ({close_reason}): {pos.symbol}"
         session.add(Notification(
             user_id=None,
             type=notif_type,
-            title=f"{'Stop Loss' if notif_type == 'stop_loss' else 'Profit Booked'}: {pos.symbol}",
-            message=f"{pos.symbol} {order['close_reason']} at ${price:.2f} "
+            title=notif_title,
+            message=f"{pos.symbol} exited via {close_reason} at ${price:.2f} "
                     f"| P&L: ${pnl:+.2f} ({order['pct_change']:+.1f}%)",
         ))
         log(f"SELL {pos.symbol}: {qty} shares @ ${price:.2f} | P&L ${pnl:+.2f}")

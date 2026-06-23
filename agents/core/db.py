@@ -136,7 +136,7 @@ class Position(Base):
     status = Column(String, default="open")   # open | closed
     opened_at = Column(DateTime, default=datetime.utcnow)
     closed_at = Column(DateTime, nullable=True)
-    close_reason = Column(String, nullable=True)  # stop_loss | profit_target | expired | manual
+    close_reason = Column(String, nullable=True)  # stop_loss | profit_target | max_hold_days | manual
     transactions = relationship("Transaction", back_populates="position")
 
 
