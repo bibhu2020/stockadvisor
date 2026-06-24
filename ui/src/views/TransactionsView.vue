@@ -188,8 +188,8 @@ function exportCsv() {
 }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .tx-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 860px; }
-.tx-table th { background: #f3f4f6; padding: 10px 12px; text-align: left; font-weight: 600; color: #6b7280; }
-.tx-table td { padding: 10px 12px; border-bottom: 1px solid #f9fafb; }
+.tx-table th { background: #f3f4f6; padding: 7px 12px; text-align: left; font-weight: 600; color: #6b7280; }
+.tx-table td { padding: 5px 12px; border-bottom: 1px solid #f9fafb; }
 .badge { padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
 .badge.buy { background: #dcfce7; color: #15803d; }
 .badge.sell { background: #fee2e2; color: #b91c1c; }
