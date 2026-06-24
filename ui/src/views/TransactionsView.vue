@@ -252,11 +252,11 @@ function exportCsv() {
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(0,0,0,0.07);
     border-left: 4px solid #e2e8f0;
-    border-radius: 14px;
-    margin-bottom: 10px;
-    padding: 12px 14px 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-    gap: 0 10px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    padding: 6px 8px 5px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.06);
+    gap: 0 6px;
   }
   .tx-table tr.buy       { border-left-color: #22c55e; }
   .tx-table tr.sell      { border-left-color: #ef4444; }
@@ -265,33 +265,33 @@ function exportCsv() {
   /* ── All cells ──────────────────────────────────────── */
   .tx-table td {
     display: flex; flex-direction: column;
-    padding: 3px 0; border: none; font-size: 0.82rem;
+    padding: 2px 0; border: none; font-size: 0.72rem;
   }
   .tx-table td::before {
     content: attr(data-label);
-    font-size: 0.57rem; font-weight: 700; color: #b0bac5;
-    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 2px;
+    font-size: 0.5rem; font-weight: 700; color: #b0bac5;
+    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 1px;
   }
 
   /* ── Row 1: Symbol (span 2) + Action ─── header ────── */
   .tx-table td[data-label="Symbol"] {
     grid-column: 1 / span 2; grid-row: 1;
-    padding-bottom: 8px;
+    padding-bottom: 4px;
     border-bottom: 1px solid rgba(0,0,0,0.06);
-    margin-bottom: 6px;
+    margin-bottom: 3px;
   }
   .tx-table td[data-label="Symbol"] strong {
-    font-size: 1.1rem; font-weight: 800; color: #0f172a; letter-spacing: 0.02em;
+    font-size: 0.88rem; font-weight: 800; color: #0f172a; letter-spacing: 0.02em;
   }
   .tx-table td[data-label="Action"] {
     grid-column: 3; grid-row: 1;
     align-items: flex-end;
-    padding-bottom: 8px;
+    padding-bottom: 4px;
     border-bottom: 1px solid rgba(0,0,0,0.06);
-    margin-bottom: 6px;
+    margin-bottom: 3px;
   }
   .tx-table td[data-label="Action"] .badge {
-    font-size: 0.72rem; padding: 3px 10px; border-radius: 6px;
+    font-size: 0.62rem; padding: 2px 6px; border-radius: 4px;
   }
 
   /* ── Row 2: Exec Price | Qty | Mkt Price ───────────── */
@@ -302,18 +302,18 @@ function exportCsv() {
   /* ── Row 3: P&L | Trigger | Date ─── footer ─────────── */
   .tx-table td[data-label="P&L"] {
     grid-column: 1; grid-row: 3;
-    padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.06); margin-top: 6px;
-    font-size: 0.9rem; font-weight: 700;
+    padding-top: 4px; border-top: 1px solid rgba(0,0,0,0.06); margin-top: 3px;
+    font-size: 0.78rem; font-weight: 700;
   }
   .tx-table td[data-label="Trigger"] {
     grid-column: 2; grid-row: 3;
     align-items: center;
-    padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.06); margin-top: 6px;
+    padding-top: 4px; border-top: 1px solid rgba(0,0,0,0.06); margin-top: 3px;
   }
   .tx-table td[data-label="Date"] {
     grid-column: 3; grid-row: 3;
     align-items: flex-end;
-    padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.06); margin-top: 6px;
+    padding-top: 4px; border-top: 1px solid rgba(0,0,0,0.06); margin-top: 3px;
   }
 
   /* ── Hide secondary columns ─────────────────────────── */
