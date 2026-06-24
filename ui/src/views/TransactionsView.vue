@@ -140,12 +140,12 @@ function exportCsv() {
               {{ tx.pos_stop_loss_price != null ? '$' + tx.pos_stop_loss_price.toFixed(2) : '—' }}
             </td>
 
-            <!-- Trigger: what will/did fire the next trade -->
+            <!-- Trigger: close reason on SELL rows; watching/— on BUY rows -->
             <td data-label="Trigger">
-              <span v-if="tx.pos_close_reason" :class="['trigger-chip', tx.pos_close_reason]">
+              <span v-if="tx.action === 'SELL' && tx.pos_close_reason" :class="['trigger-chip', tx.pos_close_reason]">
                 {{ closeReasonLabel(tx.pos_close_reason) }}
               </span>
-              <span v-else-if="tx.pos_status === 'open'" class="trigger-chip open">
+              <span v-else-if="tx.action === 'BUY' && tx.pos_status === 'open'" class="trigger-chip open">
                 Watching
               </span>
               <span v-else class="muted">—</span>
