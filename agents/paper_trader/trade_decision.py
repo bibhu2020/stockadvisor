@@ -97,6 +97,19 @@ def run(last_report, open_symbols: list[str], buying_power: float,
     log("TradeDecision: generating trade decisions...")
     result = agent.run("Decide which stocks to buy from the candidates.", context=context)
     buy_orders = result.get("buy_orders", [])
+
+    # Use the actual current market price if it's at or below the LLM's intended entry price.
+    # The LLM may echo the analyst's entry_price; we want the real fill price.
+    current_prices = {p["symbol"]: p["current_price"] for p in candidates}
+    for order in buy_orders:
+        sym = order.get("symbol")
+        current = current_prices.get(sym)
+        llm_price = order.get("price", 0)
+        if current is not None and current <= llm_price:
+            if current != llm_price:
+                log(f"  {sym}: using current price ${current:.2f} (LLM entry ${llm_price:.2f})")
+            order["price"] = current
+
     log(f"TradeDecision: {len(buy_orders)} BUY orders: {[o.get('symbol') for o in buy_orders]}")
     log(f"  Reasoning: {result.get('reasoning','')}")
     return buy_orders
