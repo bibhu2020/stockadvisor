@@ -84,18 +84,62 @@ function daysSince(d: string | Date) {
 }
 
 const pnlChartOption = () => ({
-  tooltip: { trigger: 'axis' },
-  grid: { left: 56, right: 12, top: 12, bottom: 28 },
+  tooltip: {
+    trigger: 'axis',
+    formatter: (params: any[]) => {
+      const date = params[0]?.axisValueLabel ?? ''
+      let html = `<strong>${date}</strong>`
+      for (const p of params) {
+        const val: number = Array.isArray(p.value) ? p.value[1] : p.value
+        if (val == null) continue
+        const fmt = p.seriesName === 'Realized P&L'
+          ? (val >= 0 ? `$${val.toFixed(2)}` : `-$${Math.abs(val).toFixed(2)}`)
+          : `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`
+        html += `<br/>${p.marker}${p.seriesName}: ${fmt}`
+      }
+      return html
+    },
+  },
+  legend: { data: ['Realized P&L', 'Portfolio %', 'SPY %'], top: 0, right: 4, textStyle: { fontSize: 10 } },
+  grid: { left: 60, right: 60, top: 28, bottom: 28 },
   xAxis: { type: 'category', data: monthlyPnl.value.map((d: any) => d.month), axisLabel: { fontSize: 11 } },
-  yAxis: { type: 'value', axisLabel: { formatter: '${value}', fontSize: 11 } },
-  series: [{
-    name: 'Realized P&L',
-    type: 'bar',
-    data: monthlyPnl.value.map((d: any) => ({
-      value: d.realized_pnl,
-      itemStyle: { color: d.realized_pnl >= 0 ? '#22c55e' : '#ef4444', borderRadius: [4,4,0,0] },
-    })),
-  }],
+  yAxis: [
+    { type: 'value', axisLabel: { formatter: '${value}', fontSize: 11 } },
+    {
+      type: 'value', position: 'right',
+      axisLabel: { formatter: (v: number) => `${v >= 0 ? '+' : ''}${v}%`, fontSize: 10 },
+      splitLine: { show: false },
+    },
+  ],
+  series: [
+    {
+      name: 'Realized P&L',
+      type: 'bar',
+      yAxisIndex: 0,
+      data: monthlyPnl.value.map((d: any) => ({
+        value: d.realized_pnl,
+        itemStyle: { color: d.realized_pnl >= 0 ? '#22c55e' : '#ef4444', borderRadius: [4, 4, 0, 0] },
+      })),
+    },
+    {
+      name: 'Portfolio %',
+      type: 'line',
+      yAxisIndex: 1,
+      data: monthlyPnl.value.map((d: any) => d.portfolio_pct),
+      lineStyle: { color: '#3b82f6', width: 2 },
+      itemStyle: { color: '#3b82f6' },
+      symbol: 'circle', symbolSize: 5,
+    },
+    {
+      name: 'SPY %',
+      type: 'line',
+      yAxisIndex: 1,
+      data: monthlyPnl.value.map((d: any) => d.spy_pct),
+      lineStyle: { color: '#f59e0b', width: 2, type: 'dashed' },
+      itemStyle: { color: '#f59e0b' },
+      symbol: 'circle', symbolSize: 5,
+    },
+  ],
 })
 
 type ChartPoint = { date: string; value: number; realized_pnl: number; unrealized_pnl: number }
@@ -361,7 +405,7 @@ function fmt$(v: number) {
     <div class="chart-row">
       <div class="chart-card wide">
         <h3>Monthly Realized P&L</h3>
-        <VChart v-if="monthlyPnl.length" :option="pnlChartOption()" style="height:220px" autoresize />
+        <VChart v-if="monthlyPnl.length" :option="pnlChartOption()" style="height:260px" autoresize />
         <div v-else class="chart-empty">No closed trade data yet</div>
       </div>
       <div class="chart-card">
