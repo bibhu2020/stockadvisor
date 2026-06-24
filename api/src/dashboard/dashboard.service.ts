@@ -50,14 +50,15 @@ export class DashboardService {
 
   private async fetchSpyMonthlyPcts(months: string[]): Promise<Record<string, number | null>> {
     if (!months.length) return {};
-    // Fetch from one month before the first month so that month's close is our baseline price
+    // Use daily interval so incomplete current months still get the latest available close.
+    // Baseline = last trading day of the month before our first tracked month.
     const baseline = new Date(months[0] + '-01');
     baseline.setUTCMonth(baseline.getUTCMonth() - 1);
     const period1 = Math.floor(baseline.getTime() / 1000);
     const period2 = Math.floor(Date.now() / 1000);
     try {
       const res = await fetch(
-        `https://query1.finance.yahoo.com/v8/finance/chart/SPY?interval=1mo&period1=${period1}&period2=${period2}`,
+        `https://query1.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&period1=${period1}&period2=${period2}`,
         { headers: { 'User-Agent': 'stockadvisor/1.0' } },
       );
       const json: any = await res.json();
@@ -65,13 +66,32 @@ export class DashboardService {
       if (!result) return {};
       const timestamps: number[] = result.timestamp;
       const closes: number[] = result.indicators.quote[0].close;
-      const basePrice = closes[0]; // end-of-month price before our tracking period
-      const out: Record<string, number | null> = {};
-      for (let i = 1; i < timestamps.length; i++) {
+
+      // Build daily close map, skip nulls (holidays/missing bars)
+      const daily: { month: string; close: number }[] = [];
+      for (let i = 0; i < timestamps.length; i++) {
         if (closes[i] == null) continue;
         const d = new Date(timestamps[i] * 1000);
-        const m = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-        out[m] = +((closes[i] - basePrice) / basePrice * 100).toFixed(2);
+        daily.push({
+          month: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`,
+          close: closes[i],
+        });
+      }
+      if (!daily.length) return {};
+
+      // Baseline price = last close in the prior month
+      const baselineMonth = `${baseline.getUTCFullYear()}-${String(baseline.getUTCMonth() + 1).padStart(2, '0')}`;
+      const baseDays = daily.filter((d) => d.month === baselineMonth);
+      if (!baseDays.length) return {};
+      const basePrice = baseDays[baseDays.length - 1].close;
+
+      // For each tracked month take the last available daily close (handles mid-month too)
+      const out: Record<string, number | null> = {};
+      for (const month of months) {
+        const days = daily.filter((d) => d.month === month);
+        if (days.length) {
+          out[month] = +((days[days.length - 1].close - basePrice) / basePrice * 100).toFixed(2);
+        }
       }
       return out;
     } catch {
