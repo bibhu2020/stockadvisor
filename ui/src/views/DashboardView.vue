@@ -116,6 +116,7 @@ const pnlChartOption = () => ({
       name: 'Realized P&L',
       type: 'bar',
       yAxisIndex: 0,
+      color: '#22c55e',
       data: monthlyPnl.value.map((d: any) => ({
         value: d.realized_pnl,
         itemStyle: { color: d.realized_pnl >= 0 ? '#22c55e' : '#ef4444', borderRadius: [4, 4, 0, 0] },
@@ -125,6 +126,7 @@ const pnlChartOption = () => ({
       name: 'Portfolio %',
       type: 'line',
       yAxisIndex: 1,
+      color: '#3b82f6',
       data: monthlyPnl.value.map((d: any) => d.portfolio_pct),
       lineStyle: { color: '#3b82f6', width: 2 },
       itemStyle: { color: '#3b82f6' },
@@ -134,6 +136,7 @@ const pnlChartOption = () => ({
       name: 'SPY %',
       type: 'line',
       yAxisIndex: 1,
+      color: '#f59e0b',
       data: monthlyPnl.value.map((d: any) => d.spy_pct),
       lineStyle: { color: '#f59e0b', width: 2, type: 'dashed' },
       itemStyle: { color: '#f59e0b' },
