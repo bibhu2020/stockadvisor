@@ -22,9 +22,9 @@ export class AgentRunsScheduler implements OnModuleInit {
     // Paper Trader — 2:45 PM EST / 3:45 PM EDT (19:45 UTC), Mon–Fri
     cron.schedule('45 19 * * 1-5', () => this.dispatch('paper_trader', false), { timezone: 'UTC' });
 
-    // Retrospective — Mon 5:00 AM UTC (= Sun 11:00 PM CST)
+    // Retrospective — Mon 4:00 AM UTC (= Sun 11:00 PM CDT / 10:00 PM CST)
     // force=false: run_retrospective.py gates to last Sunday of the month
-    cron.schedule('0 5 * * 1', () => this.dispatch('retrospective', false), { timezone: 'UTC' });
+    cron.schedule('0 4 * * 1', () => this.dispatch('retrospective', false), { timezone: 'UTC' });
 
     this.logger.log('Agent cron schedules registered');
   }

@@ -18,7 +18,7 @@ from sqlalchemy import select
 
 
 def is_last_sunday_of_month() -> bool:
-    # Use CST/CDT — the cron fires Mon 5AM UTC which is still Sunday in Chicago
+    # Use CST/CDT — the cron fires Mon 4AM UTC which is still Sunday in Chicago (both CDT and CST)
     import pytz
     chicago = pytz.timezone("America/Chicago")
     today = datetime.now(chicago).date()
