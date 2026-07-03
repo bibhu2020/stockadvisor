@@ -2,16 +2,27 @@
 import { ref, onMounted } from 'vue'
 import api from '../api'
 
+const activeTab = ref<'market' | 'retro'>('market')
+
 const reports   = ref<any[]>([])
 const selected  = ref<any | null>(null)
 const loading   = ref(true)
 
+const retroReports  = ref<any[]>([])
+const selectedRetro = ref<any | null>(null)
+const retroLoading  = ref(true)
+
 onMounted(async () => {
   try {
-    const res = await api.get('/reports')
-    reports.value = res.data
+    const [marketRes, retroRes] = await Promise.all([
+      api.get('/reports'),
+      api.get('/retrospective-reports'),
+    ])
+    reports.value = marketRes.data
+    retroReports.value = retroRes.data
   } finally {
     loading.value = false
+    retroLoading.value = false
   }
 })
 
@@ -72,6 +83,42 @@ function gain(p: any) {
   if (!p.entry_price || !p.exit_price) return null
   return (((p.exit_price - p.entry_price) / p.entry_price) * 100).toFixed(0)
 }
+
+// ── Monthly Retrospective tab ──────────────────────────────────────────────
+
+async function openRetro(r: any) {
+  const res = await api.get(`/retrospective-reports/${r.id}`)
+  selectedRetro.value = res.data
+}
+
+function retroPdfUrl(id: number) {
+  const base  = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'
+  const token = localStorage.getItem('token') ?? ''
+  return `${base}/retrospective-reports/${id}/pdf?token=${encodeURIComponent(token)}`
+}
+
+function getPatterns(r: any): any {
+  try { return typeof r.patterns === 'string' ? JSON.parse(r.patterns) : r.patterns || {} }
+  catch { return {} }
+}
+
+function monthLabel(year: number, month: number) {
+  const dt = new Date(year, month - 1, 1)
+  return dt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
+
+function monthShort(year: number, month: number) {
+  const dt = new Date(year, month - 1, 1)
+  return {
+    month: dt.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(),
+    year,
+  }
+}
+
+function pnlColor(v: number | null | undefined) {
+  if (v == null) return '#6b7280'
+  return v >= 0 ? '#15803d' : '#dc2626'
+}
 </script>
 
 <template>
@@ -79,11 +126,23 @@ function gain(p: any) {
     <!-- ── Header ──────────────────────────────────────────────────── -->
     <div class="page-header">
       <div>
-        <h2 class="page-h">Analyst Reports</h2>
-        <p class="page-sub">AI-generated market analysis and stock picks</p>
+        <h2 class="page-h">Reports</h2>
+        <p class="page-sub">AI-generated analysis from the Market Analyst and Retrospective agents</p>
       </div>
-      <span v-if="reports.length" class="report-count">{{ reports.length }} reports</span>
+      <span v-if="activeTab === 'market' && reports.length" class="report-count">{{ reports.length }} reports</span>
+      <span v-else-if="activeTab === 'retro' && retroReports.length" class="report-count">{{ retroReports.length }} reports</span>
     </div>
+
+    <!-- ── Tab switcher ────────────────────────────────────────────── -->
+    <div class="tab-switcher">
+      <button class="tab-btn" :class="{ active: activeTab === 'market' }" @click="activeTab = 'market'">Market Analyst</button>
+      <button class="tab-btn" :class="{ active: activeTab === 'retro' }" @click="activeTab = 'retro'">Monthly Retrospective</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         Market Analyst tab
+    ═══════════════════════════════════════════════════════════════ -->
+    <template v-if="activeTab === 'market'">
 
     <!-- ── Loading ─────────────────────────────────────────────────── -->
     <div v-if="loading" class="loading-rows">
@@ -299,6 +358,185 @@ function gain(p: any) {
         </div>
       </div>
     </Transition>
+
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         Monthly Retrospective tab
+    ═══════════════════════════════════════════════════════════════ -->
+    <template v-else-if="activeTab === 'retro'">
+
+    <!-- ── Loading ─────────────────────────────────────────────────── -->
+    <div v-if="retroLoading" class="loading-rows">
+      <div v-for="i in 3" :key="i" class="skeleton-row"></div>
+    </div>
+
+    <!-- ── Grid ────────────────────────────────────────────────────── -->
+    <div v-else-if="retroReports.length" class="report-grid">
+
+      <!-- Column headers -->
+      <div class="grid-header retro-header">
+        <div class="col-date">Period</div>
+        <div class="col-pnl">P&amp;L vs SPY</div>
+        <div class="col-winrate">Win Rate</div>
+        <div class="col-strategy">Strategy</div>
+        <div class="col-actions">Actions</div>
+      </div>
+
+      <!-- Data rows -->
+      <div class="grid-body">
+        <div
+          v-for="r in retroReports"
+          :key="r.id"
+          class="report-row retro-row"
+          @click="openRetro(r)"
+        >
+          <!-- Period cell -->
+          <div class="col-date">
+            <div class="date-pill">
+              <span class="d-weekday">{{ monthShort(r.year, r.month).month }}</span>
+              <span class="d-num">{{ r.year }}</span>
+            </div>
+          </div>
+
+          <!-- P&L cell -->
+          <div class="col-pnl">
+            <span class="pnl-val" :style="{ color: pnlColor(r.total_pnl) }">
+              {{ r.total_pnl >= 0 ? '+' : '' }}${{ r.total_pnl.toFixed(2) }}
+            </span>
+            <span class="pnl-vs" v-if="r.spy_return_pct != null">vs SPY {{ r.spy_return_pct >= 0 ? '+' : '' }}{{ r.spy_return_pct }}%</span>
+            <span class="pnl-vs" v-else>SPY data unavailable</span>
+          </div>
+
+          <!-- Win rate cell -->
+          <div class="col-winrate">
+            <span class="winrate-val">{{ r.win_rate_pct }}%</span>
+            <span class="trade-count">{{ r.total_trades }} trades</span>
+          </div>
+
+          <!-- Strategy cell -->
+          <div class="col-strategy">
+            <span v-if="r.new_strategy_id" class="strategy-badge tuned">Strategy Tuned</span>
+            <span v-else class="strategy-badge unchanged">Unchanged</span>
+          </div>
+
+          <!-- Actions cell -->
+          <div class="col-actions" @click.stop>
+            <a v-if="r.pdf_path" :href="retroPdfUrl(r.id)" target="_blank" class="btn-pdf" title="Download PDF">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              PDF
+            </a>
+            <button class="btn-view" @click.stop="openRetro(r)">View →</button>
+          </div>
+
+          <!-- Hover glow accent -->
+          <div class="row-accent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Empty ────────────────────────────────────────────────────── -->
+    <div v-else class="empty-state">
+      <div class="empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <p>No retrospective reports yet.</p>
+      <span>The Retrospective agent runs monthly and evaluates portfolio performance vs SPY.</span>
+    </div>
+
+    <!-- ── Detail Modal ─────────────────────────────────────────────── -->
+    <Transition name="modal">
+      <div v-if="selectedRetro" class="modal-overlay" @click.self="selectedRetro = null">
+        <div class="modal">
+
+          <div class="modal-head">
+            <div class="modal-title-group">
+              <div class="modal-date-badge">
+                <span>{{ monthShort(selectedRetro.year, selectedRetro.month).month }}</span>
+                <strong>{{ selectedRetro.year }}</strong>
+              </div>
+              <div>
+                <h3>Monthly Retrospective — {{ monthLabel(selectedRetro.year, selectedRetro.month) }}</h3>
+                <p class="modal-meta">
+                  {{ selectedRetro.total_trades }} trades · {{ selectedRetro.win_rate_pct }}% win rate ·
+                  {{ selectedRetro.underperformed_spy ? 'Underperformed SPY' : 'Met/Beat SPY' }}
+                </p>
+              </div>
+            </div>
+            <div class="modal-head-actions">
+              <a v-if="selectedRetro.pdf_path" :href="retroPdfUrl(selectedRetro.id)" target="_blank" class="modal-pdf-btn">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download PDF
+              </a>
+              <button class="modal-close" @click="selectedRetro = null">✕</button>
+            </div>
+          </div>
+
+          <div class="modal-body">
+            <!-- Stat row -->
+            <div class="retro-stats">
+              <div class="retro-stat">
+                <span class="rs-label">P&amp;L</span>
+                <span class="rs-val" :style="{ color: pnlColor(selectedRetro.total_pnl) }">
+                  {{ selectedRetro.total_pnl >= 0 ? '+' : '' }}${{ selectedRetro.total_pnl.toFixed(2) }}
+                </span>
+              </div>
+              <div class="retro-stat">
+                <span class="rs-label">SPY Return</span>
+                <span class="rs-val">{{ selectedRetro.spy_return_pct != null ? selectedRetro.spy_return_pct + '%' : 'N/A' }}</span>
+              </div>
+              <div class="retro-stat">
+                <span class="rs-label">Win Rate</span>
+                <span class="rs-val">{{ selectedRetro.win_rate_pct }}%</span>
+              </div>
+              <div class="retro-stat">
+                <span class="rs-label">Wins / Losses</span>
+                <span class="rs-val">{{ selectedRetro.wins }} / {{ selectedRetro.losses }}</span>
+              </div>
+            </div>
+
+            <!-- Pattern analysis -->
+            <div v-if="getPatterns(selectedRetro).key_insight" class="summary-banner">
+              <span class="sum-icon">🔍</span>
+              <p><strong>Key insight:</strong> {{ getPatterns(selectedRetro).key_insight }}</p>
+            </div>
+
+            <div
+              class="ab-pair"
+              v-if="getPatterns(selectedRetro).winning_patterns?.length || getPatterns(selectedRetro).losing_patterns?.length"
+            >
+              <div v-if="getPatterns(selectedRetro).winning_patterns?.length" class="ab fund">
+                <div class="ab-label">✅ Winning Patterns</div>
+                <ul class="pattern-list"><li v-for="(p, i) in getPatterns(selectedRetro).winning_patterns" :key="i">{{ p }}</li></ul>
+              </div>
+              <div v-if="getPatterns(selectedRetro).losing_patterns?.length" class="ab risk">
+                <div class="ab-label">⚠ Losing Patterns</div>
+                <ul class="pattern-list"><li v-for="(p, i) in getPatterns(selectedRetro).losing_patterns" :key="i">{{ p }}</li></ul>
+              </div>
+            </div>
+
+            <div v-if="getPatterns(selectedRetro).analysis_text" class="ab thesis">
+              <div class="ab-label">📝 Full Analysis</div>
+              <p>{{ getPatterns(selectedRetro).analysis_text }}</p>
+            </div>
+
+            <!-- Strategy change -->
+            <div v-if="selectedRetro.new_strategy_id" class="strategy-change">
+              <div class="ab-label">🔧 Strategy Updated</div>
+              <p>{{ selectedRetro.tuning_rationale }}</p>
+              <p v-if="selectedRetro.prompts_updated != null" class="prompts-note">{{ selectedRetro.prompts_updated }}/4 agent prompts updated.</p>
+              <router-link :to="{ path: '/strategies', query: { id: selectedRetro.new_strategy_id } }" class="view-strategy-link">View updated strategy →</router-link>
+            </div>
+            <div v-else class="strategy-change unchanged">
+              <div class="ab-label">Strategy Unchanged</div>
+              <p>Performance met or beat the SPY benchmark this month — no tuning was triggered.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    </template>
   </div>
 </template>
 
@@ -312,6 +550,19 @@ function gain(p: any) {
   padding: 5px 14px; background: #f1f5f9; border-radius: 99px;
   font-size: 0.8rem; font-weight: 700; color: #475569; margin-top: 4px;
 }
+
+/* ── Tab switcher ──────────────────────────────────────────────────── */
+.tab-switcher {
+  display: flex; gap: 4px; background: #f1f5f9; border-radius: 12px;
+  padding: 4px; margin-bottom: 22px; width: fit-content;
+}
+.tab-btn {
+  padding: 8px 18px; border: none; background: transparent; border-radius: 9px;
+  font-size: 0.83rem; font-weight: 700; color: #64748b; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.tab-btn:hover { color: #334155; }
+.tab-btn.active { background: #fff; color: #0f172a; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 
 /* ── Skeleton loader ───────────────────────────────────────────────── */
 .loading-rows { display: flex; flex-direction: column; gap: 10px; }
@@ -449,6 +700,49 @@ function gain(p: any) {
   transition: background 0.15s, transform 0.12s;
 }
 .btn-view:hover { background: #dbeafe; transform: scale(1.05); }
+
+/* ── Retrospective row layout (overrides the market-analyst column set) ─ */
+.grid-header.retro-header,
+.report-row.retro-row {
+  grid-template-columns: 120px 1fr 130px 150px 160px;
+}
+.col-pnl, .col-winrate, .col-strategy { padding: 0 8px; }
+.pnl-val { display: block; font-size: 0.95rem; font-weight: 800; }
+.pnl-vs  { display: block; font-size: 0.7rem; color: #94a3b8; margin-top: 2px; }
+.winrate-val { display: block; font-size: 0.92rem; font-weight: 700; color: #0f172a; }
+.trade-count { display: block; font-size: 0.7rem; color: #94a3b8; margin-top: 2px; }
+.strategy-badge {
+  display: inline-block; padding: 4px 10px; border-radius: 99px;
+  font-size: 0.72rem; font-weight: 700;
+}
+.strategy-badge.tuned     { background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; }
+.strategy-badge.unchanged { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+/* ── Retrospective detail modal ───────────────────────────────────────── */
+.retro-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+  background: #f1f5f9; border-radius: 12px; overflow: hidden;
+}
+.retro-stat {
+  background: #fff; padding: 14px 12px; display: flex; flex-direction: column; gap: 4px;
+}
+.rs-label { font-size: 0.65rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+.rs-val   { font-size: 1.05rem; font-weight: 800; color: #0f172a; }
+.pattern-list { margin: 0; padding-left: 18px; font-size: 0.83rem; color: #374151; line-height: 1.7; }
+.strategy-change {
+  padding: 14px 18px; border-radius: 12px; background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+}
+.strategy-change.unchanged { background: #f8fafc; border-color: #e2e8f0; }
+.strategy-change .ab-label { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 7px; color: #5b21b6; }
+.strategy-change.unchanged .ab-label { color: #475569; }
+.strategy-change p { margin: 0 0 8px; font-size: 0.83rem; color: #374151; line-height: 1.7; }
+.prompts-note { font-size: 0.75rem; color: #7c3aed; font-weight: 600; }
+.view-strategy-link {
+  display: inline-block; margin-top: 4px; font-size: 0.8rem; font-weight: 700;
+  color: #5b21b6; text-decoration: none;
+}
+.view-strategy-link:hover { text-decoration: underline; }
 
 /* ── Empty ─────────────────────────────────────────────────────────── */
 .empty-state { text-align: center; padding: 80px 20px; color: #94a3b8; }
@@ -597,6 +891,20 @@ function gain(p: any) {
   .col-conf    { grid-area: conf; }
   .col-gain    { display: none; }
   .col-actions { grid-area: actions; justify-content: flex-end; }
+
+  .report-row.retro-row {
+    grid-template-columns: 130px 1fr;
+    grid-template-areas:
+      "date    pnl"
+      "winrate strategy"
+      "actions actions";
+  }
+  .retro-row .col-pnl      { grid-area: pnl; }
+  .retro-row .col-winrate  { grid-area: winrate; }
+  .retro-row .col-strategy { grid-area: strategy; }
+  .retro-row .col-actions  { grid-area: actions; justify-content: flex-end; }
+
+  .retro-stats { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* ── Mobile (< 768px) ──────────────────────────────────────────── */

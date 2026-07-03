@@ -306,7 +306,7 @@ def get_spy_monthly_return(year: int, month: int) -> float | None:
             end = datetime(year + 1, 1, 1)
         else:
             end = datetime(year, month + 1, 1)
-        hist = yf.Ticker("^SPY").history(start=start, end=end)
+        hist = yf.Ticker("SPY").history(start=start, end=end)
         if len(hist) < 2:
             return None
         first = float(hist["Close"].iloc[0])
