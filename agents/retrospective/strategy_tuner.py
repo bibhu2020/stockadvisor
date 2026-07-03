@@ -119,11 +119,16 @@ def _safe_prompt(new_text, current_text: str, agent_name: str, log) -> str:
 
 
 def run(current_strategy: Strategy, performance: dict, patterns: dict,
-        session, log) -> Strategy | None:
-    """Evolve strategy params and analyst prompts. Returns new Strategy or None."""
+        session, log) -> tuple[Strategy | None, dict]:
+    """Evolve strategy params and analyst prompts.
+
+    Returns (new Strategy or None, tuning metadata dict). The metadata dict
+    holds {"rationale": str, "prompts_updated": int} when a new strategy was
+    published, or {} when tuning was skipped/failed.
+    """
     if not performance.get("underperformed_spy"):
         log("StrategyTuner: performance meets or beats SPY — no strategy change.")
-        return None
+        return None, {}
 
     current_params  = current_strategy.get_parameters()
     active_prompts  = _current_prompts(current_params)
@@ -161,7 +166,7 @@ def run(current_strategy: Strategy, performance: dict, patterns: dict,
 
     if "error" in result or "name" not in result:
         log(f"StrategyTuner: invalid LLM response — {result}")
-        return None
+        return None, {}
 
     # ── Validate numeric parameters ──────────────────────────────────────────
     raw_params = result.get("parameters", {})
@@ -218,7 +223,8 @@ def run(current_strategy: Strategy, performance: dict, patterns: dict,
     session.flush()
 
     log(f"StrategyTuner: new strategy v{new_strategy.version} — {new_strategy.name}")
-    log(f"  Rationale: {result.get('rationale', '')}")
+    rationale = result.get("rationale", "")
+    log(f"  Rationale: {rationale}")
     prompt_updates = sum(1 for a in final_prompts if final_prompts[a] != active_prompts[a])
     log(f"  Prompts updated: {prompt_updates}/4 agents")
-    return new_strategy
+    return new_strategy, {"rationale": rationale, "prompts_updated": prompt_updates}

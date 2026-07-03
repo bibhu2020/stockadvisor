@@ -11,12 +11,12 @@ import { JwtService } from '@nestjs/jwt';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { streamPdf } from '../common/pdf-proxy.util';
-import { ReportsService } from './reports.service';
+import { RetrospectiveReportsService } from './retrospective-reports.service';
 
-@Controller('reports')
-export class ReportsController {
+@Controller('retrospective-reports')
+export class RetrospectiveReportsController {
   constructor(
-    private svc: ReportsService,
+    private svc: RetrospectiveReportsService,
     private jwt: JwtService,
   ) {}
 

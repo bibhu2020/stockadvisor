@@ -29,7 +29,7 @@ def run(session: Session, year: int, month: int, log) -> dict:
         select(PortfolioSnapshot).where(
             extract("year",  PortfolioSnapshot.snapshot_at) == year,
             extract("month", PortfolioSnapshot.snapshot_at) == month,
-        ).order_by(PortfolioSnapshot.snapshot_at)
+        ).order_by(PortfolioSnapshot.snapshot_at).limit(1)
     ).scalar_one_or_none()
     initial_value = first_snap.total_value if first_snap else 5000.0
 

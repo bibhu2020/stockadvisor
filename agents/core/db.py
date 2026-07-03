@@ -122,6 +122,33 @@ class AnalystReport(Base):
         self.picks = json.dumps(picks)
 
 
+class RetrospectiveReport(Base):
+    __tablename__ = "retrospective_reports"
+    id = Column(Integer, primary_key=True)
+    year = Column(Integer, nullable=False)
+    month = Column(Integer, nullable=False)
+    agent_run_id = Column(Integer, ForeignKey("agent_runs.id"), nullable=True)
+    old_strategy_id = Column(Integer, ForeignKey("strategies.id"), nullable=True)
+    new_strategy_id = Column(Integer, ForeignKey("strategies.id"), nullable=True)
+    total_trades = Column(Integer, default=0)
+    wins = Column(Integer, default=0)
+    losses = Column(Integer, default=0)
+    win_rate_pct = Column(Float, default=0.0)
+    total_pnl = Column(Float, default=0.0)
+    initial_value = Column(Float, nullable=True)
+    spy_return_pct = Column(Float, nullable=True)
+    spy_equivalent_pnl = Column(Float, nullable=True)
+    underperformed_spy = Column(Boolean, default=False)
+    patterns = Column(Text, nullable=True)          # JSON: pattern_analyzer's full result dict
+    tuning_rationale = Column(Text, nullable=True)   # strategy_tuner's "rationale", if it ran
+    prompts_updated = Column(Integer, nullable=True) # count of agent prompts changed (0-4), if tuner ran
+    pdf_path = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    def get_patterns(self) -> dict:
+        return json.loads(self.patterns) if self.patterns else {}
+
+
 class Position(Base):
     __tablename__ = "positions"
     id = Column(Integer, primary_key=True)
