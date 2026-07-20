@@ -108,7 +108,7 @@ class AnalystReport(Base):
     __tablename__ = "analyst_reports"
     id = Column(Integer, primary_key=True)
     report_date = Column(String, nullable=False)  # YYYY-MM-DD
-    agent_run_id = Column(Integer, ForeignKey("agent_runs.id"), nullable=True)
+    agent_run_id = Column(Integer, ForeignKey("agent_runs.id", ondelete="SET NULL"), nullable=True)
     picks = Column(Text, nullable=False)          # JSON list of picks
     market_summary = Column(Text, nullable=True)
     vix_level = Column(Float, nullable=True)
@@ -127,7 +127,7 @@ class RetrospectiveReport(Base):
     id = Column(Integer, primary_key=True)
     year = Column(Integer, nullable=False)
     month = Column(Integer, nullable=False)
-    agent_run_id = Column(Integer, ForeignKey("agent_runs.id"), nullable=True)
+    agent_run_id = Column(Integer, ForeignKey("agent_runs.id", ondelete="SET NULL"), nullable=True)
     old_strategy_id = Column(Integer, ForeignKey("strategies.id"), nullable=True)
     new_strategy_id = Column(Integer, ForeignKey("strategies.id"), nullable=True)
     total_trades = Column(Integer, default=0)
@@ -177,7 +177,7 @@ class Transaction(Base):
     amount = Column(Float, nullable=False)
     position_id = Column(Integer, ForeignKey("positions.id"), nullable=True)
     strategy_id = Column(Integer, ForeignKey("strategies.id"), nullable=True)
-    agent_run_id = Column(Integer, ForeignKey("agent_runs.id"), nullable=True)
+    agent_run_id = Column(Integer, ForeignKey("agent_runs.id", ondelete="SET NULL"), nullable=True)
     reason = Column(Text, nullable=True)
     realized_pnl = Column(Float, nullable=True)
     executed_at = Column(DateTime, default=datetime.utcnow)
@@ -191,7 +191,7 @@ class PortfolioSnapshot(Base):
     buying_power = Column(Float, nullable=False)
     open_positions_value = Column(Float, default=0.0)
     total_value = Column(Float, nullable=False)
-    agent_run_id = Column(Integer, ForeignKey("agent_runs.id"), nullable=True)
+    agent_run_id = Column(Integer, ForeignKey("agent_runs.id", ondelete="SET NULL"), nullable=True)
 
 
 class Notification(Base):

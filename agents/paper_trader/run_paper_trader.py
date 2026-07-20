@@ -13,19 +13,23 @@ from agents.core.market_hours import check_or_exit
 check_or_exit("Paper Trader")
 
 from agents.core.db import (
-    AgentRun, AnalystReport, PortfolioSnapshot, Position,
-    Transaction, init_db, get_setting, get_active_strategy, SessionLocal
+    AgentRun, AnalystReport, Position, init_db, get_setting,
+    get_active_strategy, SessionLocal
 )
 from agents.core.orchestrator import AgentOrchestrator
 from agents.paper_trader import position_monitor, trade_decision, trade_executor
-from sqlalchemy import select, desc, update, delete
+from sqlalchemy import select, desc, delete
 
 
 _AGENT_RUN_RETENTION_DAYS = 7
 
 
 def _purge_old_agent_runs(session, log) -> None:
-    """Delete agent_run rows older than retention window and null their FKs first."""
+    """Delete agent_run rows older than retention window.
+
+    Child tables' agent_run_id FKs are ON DELETE SET NULL, so no manual
+    nulling is needed here regardless of which tables reference agent_runs.
+    """
     cutoff = datetime.utcnow() - timedelta(days=_AGENT_RUN_RETENTION_DAYS)
 
     old_ids = session.execute(
@@ -35,23 +39,6 @@ def _purge_old_agent_runs(session, log) -> None:
     if not old_ids:
         log(f"Agent run cleanup: no runs older than {_AGENT_RUN_RETENTION_DAYS} days.")
         return
-
-    # Null FK references in child tables before deleting
-    session.execute(
-        update(AnalystReport)
-        .where(AnalystReport.agent_run_id.in_(old_ids))
-        .values(agent_run_id=None)
-    )
-    session.execute(
-        update(Transaction)
-        .where(Transaction.agent_run_id.in_(old_ids))
-        .values(agent_run_id=None)
-    )
-    session.execute(
-        update(PortfolioSnapshot)
-        .where(PortfolioSnapshot.agent_run_id.in_(old_ids))
-        .values(agent_run_id=None)
-    )
 
     session.execute(delete(AgentRun).where(AgentRun.id.in_(old_ids)))
     log(f"Agent run cleanup: deleted {len(old_ids)} run(s) older than {_AGENT_RUN_RETENTION_DAYS} days.")

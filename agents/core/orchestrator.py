@@ -36,6 +36,10 @@ class AgentOrchestrator:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            # A failed statement leaves the transaction aborted; roll back
+            # so the session can still be used to record the failure below.
+            self._session.rollback()
         run = self._session.get(AgentRun, self.run_id)
         run.finished_at = datetime.utcnow()
         if exc_type:
